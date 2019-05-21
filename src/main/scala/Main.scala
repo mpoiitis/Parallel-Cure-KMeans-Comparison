@@ -21,19 +21,24 @@ object Main {
     val p6 = Point(Array(35, 45))
 
     // KD Tree Test
-    val tree = new KdTree(Node(p1, null, null), k = 2)
+    var root = Node(p1, null, null)
+    val tree = new KdTree(root, k = 2)
     tree.insert(p2)
     tree.insert(p3)
     tree.insert(p4)
     tree.insert(p5)
     tree.insert(p6)
 
+//    // KD Tree Deletion Test
+//    root = tree.delete(root.point)
+//    println("Root after deletion of (30, 40)")
+//    println(root.point.dimensions(0) +", " + root.point.dimensions(1))
 //    // KD Tree Search Test
 //    println(tree.search(p3))
 //    println(tree.search(Point(Array(23, 222))))
 //    // KD Tree Find Minimum Test
-//    println("Minimum of 0'th dimension is " + tree.findMinimum(0).point.dimensions(0))
-//    println("Minimum of 1'th dimension is " + tree.findMinimum(1).point.dimensions(1))
+//    println("Minimum of 0'th dimension is " + tree.findMinimum(root, 0).point.dimensions(0))
+//    println("Minimum of 1'th dimension is " + tree.findMinimum(root, 1).point.dimensions(1))
 
 //    // Min Heap Test
 //    val dummy = Cluster(Array(p1), id = -1)

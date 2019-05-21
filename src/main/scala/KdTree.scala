@@ -4,6 +4,8 @@ case class Node(point: Point, var left: Node, var right: Node, var deleted: Bool
 
 /*
   KD Tree with root as the root node and k dimensions for each point
+  left children are < on the dimension that their parent is aligned
+  right children are >= on the dimension that their parent is aligned
  */
 class KdTree(var root: Node, k: Int) {
 
@@ -69,6 +71,9 @@ class KdTree(var root: Node, k: Int) {
     searchRecursive(this.root, point, 0)
   }
 
+  /*
+    Search point in tree recursively
+   */
   def searchRecursive(root: Node, point: Point, depth: Int): Boolean = {
     if (root == null){
       return false
@@ -99,10 +104,13 @@ class KdTree(var root: Node, k: Int) {
   /*
     Wrapper function to abstract find minimum for a given dimension
    */
-  def findMinimum(dimension: Int): Node = {
-    findMinimumRecursive(this.root, dimension, 0)
+  def findMinimum(root: Node, dimension: Int): Node = {
+    findMinimumRecursive(root, dimension, 0)
   }
 
+  /*
+    Find minimum point along the specified dimension in tree recursively
+   */
   def findMinimumRecursive(root: Node, dimension: Int, depth: Int) : Node = {
 
     if (root == null){
@@ -143,5 +151,64 @@ class KdTree(var root: Node, k: Int) {
     val total = minOfNodes(minOfTwo, node3, dimension)
 
     total
+  }
+
+  /*
+    Wrapper function to abstract deletion of a point in the tree
+   */
+  def delete(point: Point): Node = {
+    deleteRecursive(this.root, point, 0)
+  }
+
+  /*
+    Delete point from tree recursively
+   */
+  def deleteRecursive(root: Node, point: Point, depth: Int): Node = {
+
+    if (root == null){
+      return null
+    }
+
+    // calculate current dimension
+    val currentDim = depth % k
+
+    if (arePointsSame(root.point, point)){
+      //right child not null
+      if (root.right != null){
+        val rightMin : Node = findMinimum(root.right, currentDim)
+
+        // Copy the minimum to root
+        val d1 = root.point.dimensions
+        val d2 = rightMin.point.dimensions
+        d1.indices.foreach(dim => d1(dim) = d2(dim))
+
+        root.right = deleteRecursive(root.right, rightMin.point, depth + 1)
+      }
+      //right child not null
+      else if(root.left != null){
+        val leftMin : Node = findMinimum(root.left, currentDim)
+
+        // Copy the minimum to root
+        val d1 = root.point.dimensions
+        val d2 = leftMin.point.dimensions
+        d1.indices.foreach(dim => d1(dim) = d2(dim))
+
+        root.right = deleteRecursive(root.left, leftMin.point, depth + 1)
+      }
+      else{
+        root.deleted = true
+        return null
+      }
+      return root
+    }
+
+    if(point.dimensions(currentDim) < root.point.dimensions(currentDim)){
+      root.left = deleteRecursive(root.left, point, depth + 1)
+    }
+    else{
+      root.right = deleteRecursive(root.right, point, depth + 1)
+    }
+
+    root
   }
 }

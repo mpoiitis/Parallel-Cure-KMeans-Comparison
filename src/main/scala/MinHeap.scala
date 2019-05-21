@@ -1,7 +1,7 @@
 class MinHeap(size: Int){
 
   var minHeap : Array[Cluster] =new Array[Cluster](size)
-  var currentSize : Int = -1
+  var currentSize : Int = _
 
   /*
     Get the parent of the cluster on the given index
@@ -73,7 +73,8 @@ class MinHeap(size: Int){
 
     // store the root value to return and find the new root
     val root : Cluster = minHeap(0)
-    minHeap(0) = minHeap(currentSize-1)
+    minHeap(0) = minHeap(currentSize-1) // move last element to the root
+    minHeap(currentSize-1) = null // remove last element as it has been moved to the root
     currentSize -= 1
     this.heapify(0)
 
@@ -114,10 +115,10 @@ class MinHeap(size: Int){
   /*
     Remove the cluster of the specific index from the MinHeap
    */
-  def deleteKey(i: Int): Cluster = {
+  def delete(clusterId: Int): Cluster = {
 
-    // make parameter var
-    var nodeIndex = i
+    // take the index of the cluster with the given id
+    var nodeIndex = minHeap.indexWhere(_.id == clusterId)
 
     // declare the best possible minimum as the distance for the cluster we want to remove
     // so as to move up the whole MinHeap
@@ -135,6 +136,12 @@ class MinHeap(size: Int){
     // the element we wanted to remove has now reached the root of the MinHeap
     // so extract the root
     this.extractMin()
+  }
+
+  override def toString: String = {
+    var str : String = ""
+    minHeap.foreach(str += _ + " ")
+    str
   }
 
 }

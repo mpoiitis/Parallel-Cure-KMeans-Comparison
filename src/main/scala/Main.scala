@@ -23,5 +23,21 @@ object Main {
     val c2 = Cluster(Array(p3, p4), closest = c, id = 2)
     val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
 
+    println(c)
+    println(c1)
+    println(c2)
+
+//    val minHeap = new MinHeap(11)
+//
+//    minHeap.insert(c)
+//    minHeap.insert(c1)
+//    minHeap.insert(c2)
+//    println("=================")
+//    println(minHeap)
+//    println(minHeap.delete(0))
+//    println(minHeap)
+//    println("=================")
+//    minHeap.insert(c)
+//    println(minHeap)
   }
 }

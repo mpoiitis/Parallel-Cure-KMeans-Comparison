@@ -211,4 +211,98 @@ class KdTree(var root: Node, k: Int) {
 
     root
   }
+
+  /*
+    Wrapper function to abstract finding of the closest point to the given point
+   */
+  def closestClusterPoint(point: Point): Point = {
+
+    val closest: Point = closestClusterPointRecursive(this.root, point, 0)
+    closest
+  }
+
+  /*
+    Finds recursively, the point that lays closer to the given point and belong to a different cluster
+    Implementation follows nearest neighbor search logic from wikipedia. Link below:
+    https://en.wikipedia.org/wiki/K-d_tree#Nearest_neighbour_search
+   */
+  def closestClusterPointRecursive(root: Node, point: Point, depth: Int): Point = {
+
+    if (root == null){
+      return null
+    }
+
+    // calculate current dimension
+    val currentDim = depth % k
+
+    // points should belong to different clusters
+    if(point.cluster == root.point.cluster){
+      closestPoint(point, closestClusterPointRecursive(root.left, point, depth + 1), closestClusterPointRecursive(root.right, point, depth + 1))
+    }
+    // find the best distance on the left subtree
+    else if (point.dimensions(currentDim) < root.point.dimensions(currentDim)){
+      var best : Point = null
+      if(root.deleted){
+        best = closestClusterPointRecursive(root.left, point, depth + 1)
+      }
+      else{
+        best = closestPoint(point, closestClusterPointRecursive(root.left, point, depth + 1), root.point)
+      }
+
+      if (best == null){
+        closestPoint(point, closestClusterPointRecursive(root.right, point, depth + 1), best)
+      }
+      // intersect hyperplane with hypersphere around the search point with a radius equal to the current nearest distance
+      // hyperplanes are axis-aligned, thus compare to see if the distance between the splitting dimension of search point and current node
+      // is lesser than the overall distance from the search point to the current best
+      else if (Math.abs(point.dimensions(currentDim)) - root.point.dimensions(currentDim) < Utils.squaredDistance(point, best)){
+        // hypersphere crosses the plane. There may be nearer points on the right subtree
+        closestPoint(point, closestClusterPointRecursive(root.right, point, depth + 1), best)
+      }
+      else{
+        best
+      }
+    }
+    // same for the right subtree
+    else{
+      var best : Point = null
+      if(root.deleted){
+        best = closestClusterPointRecursive(root.right, point, depth + 1)
+      }
+      else{
+        best = closestPoint(point, closestClusterPointRecursive(root.right, point, depth + 1), root.point)
+      }
+
+      if(best == null){
+        closestPoint(point, closestClusterPointRecursive(root.left, point, depth + 1), best)
+      }
+      else if (Math.abs(point.dimensions(currentDim)) - root.point.dimensions(currentDim) < Utils.squaredDistance(point, best)){
+        closestPoint(point, closestClusterPointRecursive(root.left, point, depth + 1), best)
+      }
+      else{
+        best
+      }
+    }
+  }
+
+  def closestPoint(refPoint: Point, point1: Point, point2: Point): Point = {
+
+    if (point1 == null){
+      point2
+    }
+    else if (point2 == null){
+      point1
+    }
+    else{
+      // compare the squared distance (not euclidean, for computation saving purposes)
+      // of each point from the reference point and return the minimum
+      if (Utils.squaredDistance(refPoint, point1) < Utils.squaredDistance(refPoint, point2)){
+        point1
+      }
+      else {
+        point2
+      }
+    }
+
+  }
 }

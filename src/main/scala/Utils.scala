@@ -15,6 +15,20 @@ object Utils {
   }
 
   /*
+    Returns the squared distance between 2 points
+    Avoids square root to save computation time according to https://en.wikipedia.org/wiki/K-d_tree#Nearest_neighbour_search
+   */
+  def squaredDistance(p1: Point, p2: Point): Double = {
+    val dim1 : Array[Double] = p1.dimensions
+    val dim2 : Array[Double] = p2.dimensions
+
+    val distances : Array[Double] = (dim1 zip dim2).map{case (dimA, dimB) => Math.pow(dimA - dimB, 2)}
+    val distance : Double = distances.sum
+
+    distance
+  }
+
+  /*
     Returns the manhattan distance between 2 points
    */
   def manhattanDistance(p1: Point, p2: Point): Double = {

@@ -20,35 +20,44 @@ object Main {
     val p5 = Point(Array(50, 30))
     val p6 = Point(Array(35, 45))
 
-    // KD Tree Test
-    var root = Node(p1, null, null)
-    val tree = new KdTree(root, k = 2)
-    tree.insert(p2)
-    tree.insert(p3)
-    tree.insert(p4)
-    tree.insert(p5)
-    tree.insert(p6)
+    val dummy = Cluster(Array(p1), id = -1)
+    val c = Cluster(Array(p3), closest = dummy)
+    val c2 = Cluster(Array(p4, p5, p6), closest = c, id = 2)
+    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
 
-//    // KD Tree Deletion Test
-//    root = tree.delete(root.point)
-//    println("Root after deletion of (30, 40)")
-//    println(root.point.dimensions(0) +", " + root.point.dimensions(1))
+    p1.cluster = c1
+    p2.cluster = c1
+    p3.cluster = c
+    p4.cluster = c2
+    p5.cluster = c2
+    p6.cluster = c2
+
+    // KD Tree Test
+
+//    var root = Node(p1, null, null)
+//    val tree = new KdTree(root, k = 2)
+//
+//    tree.insert(p2)
+//    tree.insert(p3)
+//    tree.insert(p4)
+//    tree.insert(p5)
+//    tree.insert(p6)
+
 //    // KD Tree Search Test
 //    println(tree.search(p3))
 //    println(tree.search(Point(Array(23, 222))))
 //    // KD Tree Find Minimum Test
 //    println("Minimum of 0'th dimension is " + tree.findMinimum(root, 0).point.dimensions(0))
 //    println("Minimum of 1'th dimension is " + tree.findMinimum(root, 1).point.dimensions(1))
+//    // KD Tree Deletion Test
+//    root = tree.delete(root.point)
+//    println("Root after deletion of (30, 40)")
+//    println(root.point.dimensions(0) +", " + root.point.dimensions(1))
+
+//    // KD Tree Closest Point of Different Cluster Test
+//    println("Closest point to (30, 40): " + tree.closestClusterPoint(p1))
 
 //    // Min Heap Test
-//    val dummy = Cluster(Array(p1), id = -1)
-//    val c = Cluster(Array(p3), closest = dummy)
-//    val c2 = Cluster(Array(p3, p4), closest = c, id = 2)
-//    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
-//
-//    println(c)
-//    println(c1)
-//    println(c2)
 
 //    val minHeap = new MinHeap(11)
 //

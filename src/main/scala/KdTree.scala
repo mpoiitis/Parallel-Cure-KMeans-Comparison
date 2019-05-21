@@ -11,7 +11,7 @@ class KdTree(var root: Node, k: Int) {
   def newNode(point: Point) = Node(point, null, null)
 
   /*
-    Wrapper function to abstact insertion of point in tree
+    Wrapper function to abstract insertion of point in tree
    */
   def insert(point: Point): Node = {
     insertRecursive(this.root, point, 0)
@@ -58,5 +58,39 @@ class KdTree(var root: Node, k: Int) {
     val different = d1.indices.exists(dim => d1(dim) != d2(dim))
 
     !different
+  }
+
+  /*
+    Wrapper function to abstract search for a point in tree
+   */
+  def search(point: Point): Boolean = {
+    searchRecursive(this.root, point, 0)
+  }
+
+  def searchRecursive(root: Node, point: Point, depth: Int): Boolean = {
+    if (root == null){
+      return false
+    }
+
+    if (arePointsSame(root.point, point)){
+      if (root.deleted){
+        return false
+      }
+      else {
+        return true
+      }
+    }
+
+    // calculate current dimension
+    val currentDim = depth % k
+
+    // recurse for left child
+    if(point.dimensions(currentDim) < root.point.dimensions(currentDim)){
+      searchRecursive(root.left, point, depth + 1)
+    }
+    // recurse for right child
+    else {
+      searchRecursive(root.right, point, depth + 1)
+    }
   }
 }

@@ -1,2 +1,2 @@
-case class Point ( dimensions : Array[Double], cluster : Cluster = null)
+case class Point ( dimensions : Array[Double], var cluster : Cluster = null)
 

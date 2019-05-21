@@ -27,17 +27,19 @@ object Main {
     println(c1)
     println(c2)
 
-//    val minHeap = new MinHeap(11)
-//
-//    minHeap.insert(c)
-//    minHeap.insert(c1)
-//    minHeap.insert(c2)
-//    println("=================")
-//    println(minHeap)
-//    println(minHeap.delete(0))
-//    println(minHeap)
-//    println("=================")
-//    minHeap.insert(c)
-//    println(minHeap)
+    val minHeap = new MinHeap(11)
+
+    minHeap.insert(c)
+    minHeap.insert(c1)
+    minHeap.insert(c2)
+    println("=================")
+    println(minHeap)
+    println(minHeap.delete(0))
+    println(minHeap)
+    println("=================")
+    minHeap.insert(c)
+    println(minHeap)
+    println(minHeap.delete(0))
+    println(minHeap)
   }
 }

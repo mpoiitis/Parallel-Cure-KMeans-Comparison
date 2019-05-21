@@ -13,33 +13,51 @@ object Main {
     Logger.getRootLogger.setLevel(Level.WARN)
     import ss.implicits._
 
-    val p1 = Point(Array(2.2, 2.7))
-    val p2 = Point(Array(2.0, 3.0))
-    val p3 = Point(Array(5.0, 2.5))
-    val p4 = Point(Array(1.0, 3.0))
+    val p1 = Point(Array(30, 40))
+    val p2 = Point(Array(5, 25))
+    val p3 = Point(Array(70, 70))
+    val p4 = Point(Array(10, 12))
+    val p5 = Point(Array(50, 30))
+    val p6 = Point(Array(35, 45))
 
-    val dummy = Cluster(Array(p1), id = -1)
-    val c = Cluster(Array(p3), closest = dummy)
-    val c2 = Cluster(Array(p3, p4), closest = c, id = 2)
-    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
+    // KD Tree Test
+    val tree = new KdTree(Node(p1, null, null), k = 2)
+    tree.insert(p2)
+    tree.insert(p3)
+    tree.insert(p4)
+    tree.insert(p5)
+    tree.insert(p6)
 
-    println(c)
-    println(c1)
-    println(c2)
+//    // KD Tree Search Test
+//    println(tree.search(p3))
+//    println(tree.search(Point(Array(23, 222))))
+//    // KD Tree Find Minimum Test
+//    println("Minimum of 0'th dimension is " + tree.findMinimum(0).point.dimensions(0))
+//    println("Minimum of 1'th dimension is " + tree.findMinimum(1).point.dimensions(1))
 
-    val minHeap = new MinHeap(11)
+//    // Min Heap Test
+//    val dummy = Cluster(Array(p1), id = -1)
+//    val c = Cluster(Array(p3), closest = dummy)
+//    val c2 = Cluster(Array(p3, p4), closest = c, id = 2)
+//    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
+//
+//    println(c)
+//    println(c1)
+//    println(c2)
 
-    minHeap.insert(c)
-    minHeap.insert(c1)
-    minHeap.insert(c2)
-    println("=================")
-    println(minHeap)
-    println(minHeap.delete(0))
-    println(minHeap)
-    println("=================")
-    minHeap.insert(c)
-    println(minHeap)
-    println(minHeap.delete(0))
-    println(minHeap)
+//    val minHeap = new MinHeap(11)
+//
+//    minHeap.insert(c)
+//    minHeap.insert(c1)
+//    minHeap.insert(c2)
+//    println("=================")
+//    println(minHeap)
+//    println(minHeap.delete(0))
+//    println(minHeap)
+//    println("=================")
+//    minHeap.insert(c)
+//    println(minHeap)
+//    println(minHeap.delete(0))
+//    println(minHeap)
   }
 }

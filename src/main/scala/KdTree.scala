@@ -1,3 +1,5 @@
+import scala.math.min
+
 case class Node(point: Point, var left: Node, var right: Node, var deleted: Boolean = false)
 
 /*
@@ -92,5 +94,54 @@ class KdTree(var root: Node, k: Int) {
     else {
       searchRecursive(root.right, point, depth + 1)
     }
+  }
+
+  /*
+    Wrapper function to abstract find minimum for a given dimension
+   */
+  def findMinimum(dimension: Int): Node = {
+    findMinimumRecursive(this.root, dimension, 0)
+  }
+
+  def findMinimumRecursive(root: Node, dimension: Int, depth: Int) : Node = {
+
+    if (root == null){
+      return null
+    }
+
+    // calculate current dimension
+    val currentDim = depth % k
+
+    if(currentDim == dimension){
+      if(root.left == null){
+        return root
+      }
+      return minOfNodes(root, findMinimumRecursive(root.left, dimension, depth + 1), dimension)
+    }
+
+    // if current dimension is different than minimum then minimum can be anywhere
+    minOfNodes(root, findMinimumRecursive(root.left, dimension, depth + 1), findMinimumRecursive(root.right, dimension, depth + 1), dimension)
+  }
+
+  /*
+    Returns the minimum of 2 nodes along the specified axis
+   */
+  def minOfNodes(node1: Node, node2: Node, dimension: Int): Node = {
+    if(node2 != null && node2.point.dimensions(dimension) < node1.point.dimensions(dimension)){
+      node2
+    }
+    else {
+      node1
+    }
+  }
+
+  /*
+    Returns the minimum of 3 nodes along the specified axis
+   */
+  def minOfNodes(node1: Node, node2: Node, node3: Node, dimension: Int) : Node = {
+    val minOfTwo = minOfNodes(node1, node2, dimension)
+    val total = minOfNodes(minOfTwo, node3, dimension)
+
+    total
   }
 }

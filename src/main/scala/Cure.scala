@@ -224,7 +224,7 @@ object Cure {
           val u: Cluster = minHeap.extractMin()
           val v: Cluster = u.closest
 
-          minHeap.delete(v)
+//          minHeap.delete(v)
 
           // merge u and v clusters into w
           val w = merge(u, v, c, shrinkFactor)
@@ -233,43 +233,43 @@ object Cure {
           u.representatives.foreach(kdTree.delete)
           v.representatives.foreach(kdTree.delete)
 
-          // insert the w representatives into the kd tree
-          w.representatives.foreach(kdTree.insert)
-
           // find the cluster closer to w
           val (closestCluster, closestDistance) = getNearestCluster(w.representatives, kdTree)
           w.closest = closestCluster
           w.distanceFromClosest = closestDistance
 
-          for (i <- 0 to minHeap.getSize){
-            val x: Cluster = minHeap.getMinHeap(i)
-
-            val log = LogManager.getRootLogger
-            log.warn(x)
-            log.warn(u)
-            log.warn(v)
-            log.warn("=============")
-            // if cluster closer to x is either u or v
-            if (x.closest == u || x.closest == v){
-              if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)){
-                // any of the other clusters could become the new closest to x
-                val (xClosest, xDistance) = getNearestCluster(x.representatives, kdTree)
-                x.closest = xClosest
-                x.distanceFromClosest = xDistance
-              }
-              else {
-                // w is the closest to x, so assign it
-                x.closest = w
-                x.distanceFromClosest = Utils.clusterDistance(x, w)
-              }
-              minHeap.heapify(i)
-            }
-            else if (Utils.clusterDistance(x, x.closest) > Utils.clusterDistance(x, w)){
-              x.closest = w
-              x.distanceFromClosest = Utils.clusterDistance(x, w)
-              minHeap.heapify(i)
-            }
-          }
+          // insert the w representatives into the kd tree
+          w.representatives.foreach(kdTree.insert)
+          removeClustersFromHeapUsingReps(kdTree, minHeap, u, v)
+//          for (i <- 0 to minHeap.getSize){
+//            val x: Cluster = minHeap.getMinHeap(i)
+//
+//            val log = LogManager.getRootLogger
+//            log.warn(x)
+//            log.warn(u)
+//            log.warn(v)
+//            log.warn("=============")
+//            // if cluster closer to x is either u or v
+//            if (x.closest == u || x.closest == v){
+//              if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)){
+//                // any of the other clusters could become the new closest to x
+//                val (xClosest, xDistance) = getNearestCluster(x.representatives, kdTree)
+//                x.closest = xClosest
+//                x.distanceFromClosest = xDistance
+//              }
+//              else {
+//                // w is the closest to x, so assign it
+//                x.closest = w
+//                x.distanceFromClosest = Utils.clusterDistance(x, w)
+//              }
+//              minHeap.heapify(i)
+//            }
+//            else if (Utils.clusterDistance(x, x.closest) > Utils.clusterDistance(x, w)){
+//              x.closest = w
+//              x.distanceFromClosest = Utils.clusterDistance(x, w)
+//              minHeap.heapify(i)
+//            }
+//          }
 
           minHeap.insert(w)
         }
@@ -292,5 +292,26 @@ object Cure {
     clusters
   }
 
-
+  private def removeClustersFromHeapUsingReps(kdTree: KdTree, cHeap: MinHeap, c1: Cluster, nearest: Cluster): Unit = {
+    val heapArray = cHeap.getMinHeap // now we need to delete the cluster points of c1 and nearest from Heap
+    val heapSize = cHeap.getSize
+    var it = 0
+    while (it < heapSize) {
+      var flag = false
+      val tmpCluster = heapArray(it)
+      val tmpNearest = tmpCluster.closest
+      if (tmpCluster == nearest){
+        cHeap.delete(it) //remove cluster
+        flag = true
+      }
+      if (tmpNearest == nearest || tmpNearest == c1) { //Re Compute nearest cluster
+        val (newCluster, newDistance) = getNearestCluster(tmpCluster.representatives, kdTree)
+        tmpCluster.closest = newCluster
+        tmpCluster.distanceFromClosest = newDistance
+        cHeap.heapify(it)
+        flag = true
+      }
+      if(!flag) it = it + 1
+    }
+  }
 }

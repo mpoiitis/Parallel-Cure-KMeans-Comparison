@@ -1,8 +1,9 @@
+import org.apache.log4j.LogManager
 
 class MinHeap(size: Int){
 
-  private var minHeap : Array[Cluster] = new Array[Cluster](size)
-  private var currentSize : Int = _
+  private val minHeap : Array[Cluster] = new Array[Cluster](size)
+  private var currentSize : Int = 0
 
   def getMinHeap: Array[Cluster] = {
     minHeap
@@ -11,7 +12,7 @@ class MinHeap(size: Int){
     getter for size
    */
   def getSize: Int = {
-    currentSize + 1
+    currentSize
   }
   /*
     Get the parent of the cluster on the given index
@@ -48,88 +49,82 @@ class MinHeap(size: Int){
     Inserts a cluster into the MinHeap
    */
   def insert(cluster: Cluster): Unit = {
-    if (currentSize == size) {
-      throw new Exception("Overflow: Could not insert key!")
+
+    if (currentSize == 0){
+      minHeap(0) = cluster
+      return
     }
 
     // insert new cluster at the end
     currentSize += 1
-    var i : Int = currentSize - 1
-    minHeap(i) = cluster
+    minHeap(currentSize) = cluster
 
-    // fix min heap property if it is violated
-    var parentCluster = minHeap(this.parent(i))
-    var childCluster = minHeap(i)
-    while (i !=0 &&  Utils.clusterDistance(parentCluster, parentCluster.closest)> Utils.clusterDistance(childCluster, childCluster.closest) ){
-      this.swap(i, this.parent(i))
-      i = this.parent(i)
+    //traverse the heap to relocate new cluster in the proper position
+    this.moveUp(currentSize)
 
-      parentCluster = minHeap(this.parent(i))
-      childCluster = minHeap(i)
-    }
   }
 
   /*
     Removes the min (root) element from the MinHeap
    */
   def extractMin(): Cluster = {
-    if (currentSize <= 0){
-      throw new Exception("Heap is already empty!")
-    }
-    if (currentSize == 1){
-      currentSize -= 1
-      return minHeap(0)
-    }
 
     // store the root value to return and find the new root
     val root : Cluster = minHeap(0)
-    minHeap(0) = minHeap(currentSize-1) // move last element to the root
-    minHeap(currentSize-1) = null // remove last element as it has been moved to the root
+    minHeap(0) = minHeap(currentSize) // move last element to the root
+    minHeap(currentSize) = null // remove last element as it has been moved to the root
     currentSize -= 1
-    this.heapify(0)
+    this.moveDown(0)
 
     root
   }
 
   def heapify(index: Int): Unit = {
 
-    val parent = index /2
-    val left = leftChild(index)
-    val right = rightChild(index)
+    val parent = this.parent(index)
 
-    if(parent > 0 && (minHeap(parent).distanceFromClosest > minHeap(index).distanceFromClosest)) moveUp(index)
-    else moveDown(index)
-  }
-
-  def moveUp(curr: Int): Unit = {
-    val pi = curr/2
-    if(minHeap(pi).distanceFromClosest > minHeap(curr).distanceFromClosest){ //do swap
-      val tmp =minHeap(pi)
-      minHeap(pi)=  minHeap(curr)
-      minHeap(curr) = tmp
-      moveUp(pi)
+    if(parent > 0 && (minHeap(parent).distanceFromClosest > minHeap(index).distanceFromClosest)) {
+      this.moveUp(index)
+    }
+    else {
+      this.moveDown(index)
     }
   }
 
-  def moveDown(curr: Int) : Unit= {
+  def moveUp(current: Int): Unit = {
+    val parent = current/2
 
-    val lChild = curr*2
-    val rChild = lChild +1
+    if(minHeap(parent).distanceFromClosest > minHeap(current).distanceFromClosest){ //do swap
+      this.swap(current, parent)
+      this.moveUp(parent)
+    }
+  }
+
+  def moveDown(current: Int) : Unit= {
+
+    val left: Int = leftChild(current)
+    val right: Int = rightChild(current)
 
     var min = {        // Compare with left child
-      if(lChild <= size && minHeap(lChild).distanceFromClosest < minHeap(curr).distanceFromClosest) lChild
-      else curr
+      if(left <= currentSize && minHeap(left).distanceFromClosest < minHeap(current).distanceFromClosest) {
+        left
+      }
+      else {
+        current
+      }
     }
     min = {            // Compare with right child
-      if(rChild <= size && minHeap(rChild).distanceFromClosest < minHeap(min).distanceFromClosest) rChild
-      else min
+      if(right <= currentSize && minHeap(right).distanceFromClosest < minHeap(min).distanceFromClosest) {
+        right
+      }
+      else {
+        min
+      }
     }
 
-    if(min != curr){     // if minimum is any of children
-      val tmp = minHeap(min)
-      minHeap(min) = minHeap(curr)
-      minHeap(curr) = tmp
-      moveDown(min)
+    if(min != current){     // if minimum is any of children
+      this.swap(current, min)
+      this.moveDown(min)
     }
   }
 
@@ -148,7 +143,7 @@ class MinHeap(size: Int){
 
     //move up the whole MinHeap
     while ( nodeIndex != 0 && Utils.clusterDistance(parentCluster, parentCluster.closest) > delClusterDistance){
-      swap(nodeIndex, this.parent(nodeIndex))
+      this.swap(nodeIndex, this.parent(nodeIndex))
       nodeIndex = this.parent(nodeIndex)
 
       parentCluster = minHeap(this.parent(nodeIndex))
@@ -157,6 +152,12 @@ class MinHeap(size: Int){
     // the element we wanted to remove has now reached the root of the MinHeap
     // so extract the root
     this.extractMin()
+  }
+
+  def delete(index:Int):Unit = {
+    minHeap(index) = minHeap(currentSize)
+    currentSize-=1
+    this.heapify(index)
   }
 
   override def toString: String = {

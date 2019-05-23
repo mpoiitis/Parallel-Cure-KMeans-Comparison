@@ -58,7 +58,7 @@ object Utils {
    */
   def clusterDistance(cluster1: Cluster, cluster2: Cluster): Double ={
     val crossProduct = cluster1.points.flatMap(p1 => cluster2.points.map(p2 => (p1, p2)))
-    val differences = crossProduct.map{case (p1, p2) => euclideanDistance(p1, p2)}
+    val differences = crossProduct.map{case (p1, p2) => squaredDistance(p1, p2)}
     val minDifference =differences.min
 
     minDifference

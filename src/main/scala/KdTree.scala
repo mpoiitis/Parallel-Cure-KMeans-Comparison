@@ -1,4 +1,4 @@
-import scala.math.min
+
 
 case class Node(point: Point, var left: Node, var right: Node, var deleted: Boolean = false)
 
@@ -222,7 +222,7 @@ class KdTree(var root: Node, k: Int) {
   }
 
   /*
-    Finds recursively, the point that lays closer to the given point and belong to a different cluster
+    Finds recursively, the point that lays closer to the given point and belongs to a different cluster
     Implementation follows nearest neighbor search logic from wikipedia. Link below:
     https://en.wikipedia.org/wiki/K-d_tree#Nearest_neighbour_search
    */

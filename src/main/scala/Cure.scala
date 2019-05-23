@@ -223,7 +223,8 @@ object Cure {
         while (minHeap.getSize > k) {
           val u: Cluster = minHeap.extractMin()
           val v: Cluster = u.closest
-          minHeap.delete(v.id)
+
+          minHeap.delete(v)
 
           // merge u and v clusters into w
           val w = merge(u, v, c, shrinkFactor)
@@ -240,13 +241,14 @@ object Cure {
           w.closest = closestCluster
           w.distanceFromClosest = closestDistance
 
-          for (x <- minHeap.getMinHeap){
+          for (i <- 0 to minHeap.getSize){
+            val x: Cluster = minHeap.getMinHeap(i)
+
             val log = LogManager.getRootLogger
             log.warn(x)
             log.warn(u)
             log.warn(v)
-            log.warn(w)
-            log.warn("========================")
+            log.warn("=============")
             // if cluster closer to x is either u or v
             if (x.closest == u || x.closest == v){
               if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)){
@@ -260,12 +262,12 @@ object Cure {
                 x.closest = w
                 x.distanceFromClosest = Utils.clusterDistance(x, w)
               }
-              minHeap.relocate(x)
+              minHeap.heapify(i)
             }
             else if (Utils.clusterDistance(x, x.closest) > Utils.clusterDistance(x, w)){
               x.closest = w
               x.distanceFromClosest = Utils.clusterDistance(x, w)
-              minHeap.relocate(x)
+              minHeap.heapify(i)
             }
           }
 

@@ -91,58 +91,27 @@ class MinHeap(size: Int){
     root
   }
 
-  /*
-    Heapify a subtree with the given index as root
-    Assumes that the subtrees are already heapified
-   */
-//  def heapify(i: Int): Unit = {
-//    val left : Int = this.leftChild(i)
-//    val right : Int = this.rightChild(i)
-//    var smallest : Int = i
-//
-//
-//    // find the smallest between left, right children and current node
-//    val leftCluster = minHeap(left)
-//    val rightCluster = minHeap(right)
-//    var parentCluster = minHeap(i)
-//
-//    if (left < currentSize &&
-//      Utils.clusterDistance(leftCluster, leftCluster.closest) < Utils.clusterDistance(parentCluster, parentCluster.closest)){
-//      smallest = left
-//    }
-//
-//    if (right < currentSize &&
-//      Utils.clusterDistance(rightCluster, rightCluster.closest) < Utils.clusterDistance(minHeap(smallest), minHeap(smallest).closest)){
-//      smallest = right
-//    }
-//
-//    // if smallest is different than the current node, swap them and recurse
-//    if (smallest != i) {
-//      this.swap(i, smallest)
-//      heapify(smallest)
-//    }
-//  }
   def heapify(index: Int): Unit = {
 
-    val parentI = index /2
-    val lChild = index*2
-    val rChild = lChild +1
+    val parent = index /2
+    val left = leftChild(index)
+    val right = rightChild(index)
 
-    if(parentI > 0 && (minHeap(parentI).distanceFromClosest > minHeap(index).distanceFromClosest)) percolateUp(index)
-    else percolateDown(index)
+    if(parent > 0 && (minHeap(parent).distanceFromClosest > minHeap(index).distanceFromClosest)) moveUp(index)
+    else moveDown(index)
   }
 
-  def percolateUp(curr: Int): Unit = {
+  def moveUp(curr: Int): Unit = {
     val pi = curr/2
     if(minHeap(pi).distanceFromClosest > minHeap(curr).distanceFromClosest){ //do swap
       val tmp =minHeap(pi)
       minHeap(pi)=  minHeap(curr)
       minHeap(curr) = tmp
-      percolateUp(pi)
+      moveUp(pi)
     }
   }
 
-  def percolateDown(curr: Int) : Unit= {
+  def moveDown(curr: Int) : Unit= {
 
     val lChild = curr*2
     val rChild = lChild +1
@@ -160,17 +129,17 @@ class MinHeap(size: Int){
       val tmp = minHeap(min)
       minHeap(min) = minHeap(curr)
       minHeap(curr) = tmp
-      percolateDown(min)
+      moveDown(min)
     }
   }
 
   /*
     Remove the cluster of the specific index from the MinHeap
    */
-  def delete(clusterId: Long): Cluster = {
+  def delete(cluster: Cluster): Cluster = {
 
     // take the index of the cluster with the given id
-    var nodeIndex = minHeap.indexWhere(_.id == clusterId)
+    var nodeIndex = minHeap.indexOf(cluster)
 
     // declare the best possible minimum as the distance for the cluster we want to remove
     // so as to move up the whole MinHeap
@@ -188,14 +157,6 @@ class MinHeap(size: Int){
     // the element we wanted to remove has now reached the root of the MinHeap
     // so extract the root
     this.extractMin()
-  }
-
-  /*
-    relocate an element in the MinHeap (delete and reinsert)
-   */
-  def relocate(cluster: Cluster): Unit = {
-    this.delete(cluster.id)
-    this.insert(cluster)
   }
 
   override def toString: String = {

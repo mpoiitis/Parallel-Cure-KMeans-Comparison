@@ -132,7 +132,7 @@ object Cure {
       var minDist: Double = 0
       var maxPoint: Point = null
 
-      val log = LogManager.getRootLogger
+//      val log = LogManager.getRootLogger
 
       points.foreach(p => {
         if (!representatives.contains(p)) {
@@ -159,10 +159,10 @@ object Cure {
         }
       }
       )
-      if(maxPoint == null){
-        log.warn("======================NULL======================")
-        log.warn("MinDist: " + minDist + " MaxDist: " + maxDist)
-      }
+//      if(maxPoint == null){
+//        log.warn("======================NULL======================")
+//        log.warn("MinDist: " + minDist + " MaxDist: " + maxDist)
+//      }
       representatives(i) = maxPoint
     }
 
@@ -191,10 +191,6 @@ object Cure {
     val mergedCluster = Cluster(w, CLUSTER_ID.value, shrunk, null, mean, Double.MaxValue)
     CLUSTER_ID.add(1)
 
-    val log = LogManager.getRootLogger
-    log.warn("Cluster: " + u)
-    log.warn("Cluster: " + v)
-    log.warn("Merged Cluster: " + mergedCluster)
 
 //    mergedCluster.representatives.foreach(_.cluster = mergedCluster)
 //    mergedCluster.points.foreach(_.cluster = mergedCluster)
@@ -300,7 +296,6 @@ object Cure {
           }
 
           minHeap.insert(w)
-          log.warn("j: " +j)
           j += 1
         }
 

@@ -4,26 +4,28 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.log4j.LogManager
+import org.apache.spark.util.LongAccumulator
 object Cure {
 
   var CLUSTERS: Broadcast[Int] = _
   var REPRESENTATIVES: Broadcast[Int] = _
   var SHRINK_FACTOR: Broadcast[Double] = _
+  var CLUSTER_ID: LongAccumulator = _
 
-  def run(data: DataFrame, k: Int, represenatives: Int, ss: SparkSession): Unit = {
+  def run(data: DataFrame, k: Int, representatives: Int, ss: SparkSession): Unit = {
 
     CLUSTERS = ss.sparkContext.broadcast(k)
-    REPRESENTATIVES = ss.sparkContext.broadcast(represenatives)
+    REPRESENTATIVES = ss.sparkContext.broadcast(representatives)
     SHRINK_FACTOR = ss.sparkContext.broadcast(0.2)
 
-    val idCounter = ss.sparkContext.longAccumulator
+    CLUSTER_ID = ss.sparkContext.longAccumulator
     val dataRdd = data.rdd
 
     // initially each point is a separate cluster
     val points : RDD[Point] = dataRdd.map(instance => {  // assign cluster id to each point
       val p =Point(Array(instance.getDouble(0), instance.getDouble(1)), cluster = null)
-      p.cluster = Cluster(points = Array(p), id = idCounter.value, representatives = Array(p), closest = null, meanPoint = p)
-      idCounter.add(1)
+      p.cluster = Cluster(points = Array(p), id = CLUSTER_ID.value, representatives = Array(p), closest = null, meanPoint = p)
+      CLUSTER_ID.add(1)
       p
     }).cache()
 
@@ -58,10 +60,7 @@ object Cure {
   def createHeap(points: List[Point], kdTree: KdTree) : MinHeap = {
 
     val minHeap = new MinHeap(points.length)
-    val log = LogManager.getRootLogger
-    log.warn("Points: " + points.length)
-    log.warn("Tree size: " + kdTree.getSize)
-    log.warn("Heap size before: " + minHeap.getSize)
+
     points.map(point => {
       val closestPoint = kdTree.closestClusterPoint(point)
       point.cluster.closest = closestPoint.cluster // Assign the cluster of the closest point to the closest field of the point's cluster
@@ -69,8 +68,7 @@ object Cure {
       minHeap.insert(point.cluster)
       point.cluster
     })
-    log.warn("Heap size after: " + minHeap.getSize)
-    log.warn("++++++++++++")
+
     minHeap
   }
 
@@ -168,20 +166,23 @@ object Cure {
 
     val w: Array[Point] = u.points ++ v.points
 
-    val mean: Point = meanPoint(w)
+    val mean: Point = this.meanPoint(w)
 
     val mergedCluster: Cluster = {
+      var shrinked: Array[Point] = null
+
+      // if cluster points are more than number of representatives, calculate representatives
       if (w.length <= c) {
-        Cluster(w, 0 , shrinkRepresentatives(shrinkFactor, w, mean), null, mean)
+        shrinked = shrinkRepresentatives(shrinkFactor, w, mean)
       }
       else {
-
         val representatives : Array[Point] = calculateRepresentatives(c, w, mean)
-
-        val shrinked = shrinkRepresentatives(shrinkFactor, representatives, mean)
-        val newCluster = Cluster(w, 0, shrinked, null, mean)
-        newCluster
+        shrinked = shrinkRepresentatives(shrinkFactor, representatives, mean)
       }
+
+      val newCluster = Cluster(w, CLUSTER_ID.value, shrinked, null, mean)
+      CLUSTER_ID.add(1)
+      newCluster
     }
 
     mergedCluster.representatives.foreach(_.cluster = mergedCluster)
@@ -227,14 +228,13 @@ object Cure {
         val kdTree: KdTree = createTree(data)
         val minHeap: MinHeap = createHeap(data, kdTree)
 
+        var j = 0
         val log = LogManager.getRootLogger
-        log.warn("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
         // implementation of cluster algorithm of original paper (figure 5)
         while (minHeap.getSize > k) {
+
           val u: Cluster = minHeap.extractMin()
           val v: Cluster = u.closest
-
-//          minHeap.delete(v)
 
           // merge u and v clusters into w
           val w = merge(u, v, c, shrinkFactor)
@@ -250,40 +250,59 @@ object Cure {
 
           // insert the w representatives into the kd tree
           w.representatives.foreach(kdTree.insert)
-          removeClustersFromHeapUsingReps(kdTree, minHeap, u, v)
-//          for (i <- 0 to minHeap.getSize){
-//            val x: Cluster = minHeap.getMinHeap(i)
-//
-//            // if cluster closer to x is either u or v
-//            if (x.closest == u || x.closest == v){
-//              if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)){
-//                // any of the other clusters could become the new closest to x
-//                val (xClosest, xDistance) = getNearestCluster(x.representatives, kdTree)
-//                x.closest = xClosest
-//                x.distanceFromClosest = xDistance
-//              }
-//              else {
-//                // w is the closest to x, so assign it
-//                x.closest = w
-//                x.distanceFromClosest = Utils.clusterDistance(x, w)
-//              }
-//              minHeap.heapify(i)
-//            }
-//            else if (Utils.clusterDistance(x, x.closest) > Utils.clusterDistance(x, w)){
-//              x.closest = w
-//              x.distanceFromClosest = Utils.clusterDistance(x, w)
-//              minHeap.heapify(i)
-//            }
-//          }
+
+          var i = 0
+
+          while (i < minHeap.getSize) {
+            var flag = false
+            val x = minHeap.getMinHeap(i)
+            if (x == v){
+              minHeap.delete(i) //remove cluster
+              flag = true
+            }
+            // if cluster closer to x is either u or v
+            if (x.closest == u || x.closest == v) {
+
+              if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)) {
+                // any of the other clusters could become the new closest to x
+                val (xClosest, xDistance) = getNearestCluster(x.representatives, kdTree)
+                x.closest = xClosest
+                x.distanceFromClosest = xDistance
+              }
+              else{
+                // w is the closest to x, so assign it
+                x.closest = w
+                x.distanceFromClosest = Utils.clusterDistance(x, w)
+              }
+              minHeap.heapify(i)
+              flag = true
+            }
+            else if (Utils.clusterDistance(x, x.closest) > Utils.clusterDistance(x, w)){
+              x.closest = w
+              x.distanceFromClosest = Utils.clusterDistance(x, w)
+              minHeap.heapify(i)
+              flag = true
+            }
+            // if no minHeap relocation happened proceed in heap
+            if(!flag) {
+              i = i + 1
+            }
+
+          }
 
           minHeap.insert(w)
+          log.warn("j: " +j)
+          j += 1
         }
 
 
-        log.warn(minHeap.getSize)
-        log.warn("===================")
+        if (j % 100 == 0){
+          log.warn(j)
+        }
         minHeap.getMinHeap.map(cluster => {
+          log.warn("Before")
           cluster.points.foreach(_.cluster = null)
+          log.warn("After")
           val reps = cluster.representatives
           Cluster(calculateRepresentatives(c, cluster.points, cluster.meanPoint), 0, reps, null, cluster.meanPoint, cluster.distanceFromClosest)
         }).toIterator
@@ -299,26 +318,4 @@ object Cure {
     clusters
   }
 
-  private def removeClustersFromHeapUsingReps(kdTree: KdTree, cHeap: MinHeap, c1: Cluster, nearest: Cluster): Unit = {
-    val heapArray = cHeap.getMinHeap // now we need to delete the cluster points of c1 and nearest from Heap
-    val heapSize = cHeap.getSize
-    var it = 0
-    while (it < heapSize) {
-      var flag = false
-      val tmpCluster = heapArray(it)
-      val tmpNearest = tmpCluster.closest
-      if (tmpCluster == nearest){
-        cHeap.delete(it) //remove cluster
-        flag = true
-      }
-      if (tmpNearest == nearest || tmpNearest == c1) { //Re Compute nearest cluster
-        val (newCluster, newDistance) = getNearestCluster(tmpCluster.representatives, kdTree)
-        tmpCluster.closest = newCluster
-        tmpCluster.distanceFromClosest = newDistance
-        cHeap.heapify(it)
-        flag = true
-      }
-      if(!flag) it = it + 1
-    }
-  }
 }

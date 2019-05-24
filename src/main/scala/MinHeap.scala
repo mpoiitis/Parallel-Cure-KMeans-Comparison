@@ -95,8 +95,10 @@ class MinHeap(size: Int){
     val left: Int = this.leftChild(current)
     val right: Int = this.rightChild(current)
 
+//    val log = LogManager.getRootLogger
+//    log.warn("Current: " + current + " Left: " + left + " Right: " + right + " Heapsize: " + getSize)
     var min = {        // Compare with left child
-      if(left <= currentSize && minHeap(left).distanceFromClosest < minHeap(current).distanceFromClosest) {
+      if(left <= currentSize - 1 && minHeap(left).distanceFromClosest < minHeap(current).distanceFromClosest) {
         left
       }
       else {
@@ -104,7 +106,7 @@ class MinHeap(size: Int){
       }
     }
     min = {            // Compare with right child
-      if(right <= currentSize && minHeap(right).distanceFromClosest < minHeap(min).distanceFromClosest) {
+      if(right <= currentSize - 1 && minHeap(right).distanceFromClosest < minHeap(min).distanceFromClosest) {
         right
       }
       else {

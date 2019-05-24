@@ -48,14 +48,13 @@ object Main {
 //    val c2 = Cluster(Array(p4, p5, p6), closest = c, id = 2)
 //    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
 //
-////
 //    p1.cluster = c1
 //    p2.cluster = c1
 //    p3.cluster = c
 //    p4.cluster = c2
 //    p5.cluster = c2
 //    p6.cluster = c2
-//
+
 //    c.closest = c2
 //    c.distanceFromClosest = 60
 //    c2.distanceFromClosest = 60
@@ -70,8 +69,8 @@ object Main {
 //    tree.insert(p4)
 //    tree.insert(p5)
 //    tree.insert(p6)
-
-
+//
+//
 //    // KD Tree Search Test
 //    println(tree.search(p3))
 //    println(tree.search(Point(Array(23, 222))))
@@ -82,7 +81,7 @@ object Main {
 //    root = tree.delete(root.point)
 //    println("Root after deletion of (30, 40)")
 //    println(root.point.dimensions(0) +", " + root.point.dimensions(1))
-
+//
 //    // KD Tree Closest Point of Different Cluster Test
 //    println("Closest point to (30, 40): " + tree.closestClusterPoint(p1))
 

@@ -24,7 +24,7 @@ object Cure {
     // initially each point is a separate cluster
     val points : RDD[Point] = dataRdd.map(instance => {  // assign cluster id to each point
       val p =Point(Array(instance.getDouble(0), instance.getDouble(1)), cluster = null)
-      p.cluster = Cluster(points = Array(p), id = CLUSTER_ID.value, representatives = Array(p), closest = null, meanPoint = p)
+      Cluster(points = Array(p), id = CLUSTER_ID.value, representatives = Array(p), closest = null, meanPoint = p)
       CLUSTER_ID.add(1)
       p
     }).cache()
@@ -97,13 +97,17 @@ object Cure {
   def shrinkRepresentatives(shrinkFactor: Double, representatives: Array[Point], mean: Point) : Array[Point] = {
 
     // copy array so as to shrink only the copy and not the original
-    val tmpArray = new Array[Point](representatives.length)
-    tmpArray.indices.foreach(i => {
-      if(representatives(i) == null)tmpArray(i) = null
-      else tmpArray(i) = Point(representatives(i).dimensions.clone())
+    val temp = new Array[Point](representatives.length)
+    temp.indices.foreach(i => {
+      if(representatives(i) == null){
+        temp(i) = null
+      }
+      else {
+        temp(i) = Point(representatives(i).dimensions.clone())
+      }
     })
 
-    val representativesCopy: Array[Point] = tmpArray
+    val representativesCopy: Array[Point] = temp
 
 
     representativesCopy.foreach(representative => {
@@ -120,12 +124,15 @@ object Cure {
    calculate the representatives of a cluster according to merge method of original paper (figure 6)
    */
   def calculateRepresentatives(numOfPoints: Int, points: Array[Point], mean: Point): Array[Point] = {
+
     val representatives = new Array[Point](numOfPoints)
 
     for (i <- 0 until numOfPoints) {
       var maxDist: Double = 0
       var minDist: Double = 0
       var maxPoint: Point = null
+
+      val log = LogManager.getRootLogger
 
       points.foreach(p => {
         if (!representatives.contains(p)) {
@@ -143,8 +150,7 @@ object Cure {
                 if (distance < currentDistance) distance
                 else currentDistance
               }
-            }
-            }
+            }}
           }
           if (minDist >= maxDist) {
             maxDist = minDist
@@ -153,10 +159,14 @@ object Cure {
         }
       }
       )
+      if(maxPoint == null){
+        log.warn("======================NULL======================")
+        log.warn("MinDist: " + minDist + " MaxDist: " + maxDist)
+      }
       representatives(i) = maxPoint
     }
 
-    representatives
+    representatives.filter(_!=null)
   }
 
   /*
@@ -168,29 +178,29 @@ object Cure {
 
     val mean: Point = this.meanPoint(w)
 
-    val mergedCluster: Cluster = {
-      var shrinked: Array[Point] = null
-
-      // if cluster points are more than number of representatives, calculate representatives
-      if (w.length <= c) {
-        shrinked = shrinkRepresentatives(shrinkFactor, w, mean)
-      }
-      else {
-        val representatives : Array[Point] = calculateRepresentatives(c, w, mean)
-        shrinked = shrinkRepresentatives(shrinkFactor, representatives, mean)
-      }
-
-      val newCluster = Cluster(w, CLUSTER_ID.value, shrinked, null, mean)
-      CLUSTER_ID.add(1)
-      newCluster
+    var shrunk: Array[Point] = null
+    // if cluster points are more than number of representatives, calculate representatives
+    if (w.length <= c) {
+      shrunk = shrinkRepresentatives(shrinkFactor, w, mean)
+    }
+    else {
+      val representatives : Array[Point] = calculateRepresentatives(c, w, mean)
+      shrunk = shrinkRepresentatives(shrinkFactor, representatives, mean)
     }
 
-    mergedCluster.representatives.foreach(_.cluster = mergedCluster)
-    mergedCluster.points.foreach(_.cluster = mergedCluster)
-    mergedCluster.meanPoint.cluster = mergedCluster
+    val mergedCluster = Cluster(w, CLUSTER_ID.value, shrunk, null, mean, Double.MaxValue)
+    CLUSTER_ID.add(1)
+
+    val log = LogManager.getRootLogger
+    log.warn("Cluster: " + u)
+    log.warn("Cluster: " + v)
+    log.warn("Merged Cluster: " + mergedCluster)
+
+//    mergedCluster.representatives.foreach(_.cluster = mergedCluster)
+//    mergedCluster.points.foreach(_.cluster = mergedCluster)
+//    mergedCluster.meanPoint.cluster = mergedCluster
     mergedCluster
   }
-
 
   // get the nearest cluster to point and the corresponding distance
   def getNearestCluster(representatives: Array[Point], kdTree: KdTree): (Cluster, Double) = {
@@ -235,7 +245,6 @@ object Cure {
 
           val u: Cluster = minHeap.extractMin()
           val v: Cluster = u.closest
-
           // merge u and v clusters into w
           val w = merge(u, v, c, shrinkFactor)
 
@@ -300,16 +309,19 @@ object Cure {
           log.warn(j)
         }
         minHeap.getMinHeap.map(cluster => {
-          log.warn("Before")
           cluster.points.foreach(_.cluster = null)
-          log.warn("After")
           val reps = cluster.representatives
-          Cluster(calculateRepresentatives(c, cluster.points, cluster.meanPoint), 0, reps, null, cluster.meanPoint, cluster.distanceFromClosest)
+          val returnedCluster: Cluster =
+            Cluster(calculateRepresentatives(c, cluster.points, cluster.meanPoint), CLUSTER_ID.value, reps, null, cluster.meanPoint, cluster.distanceFromClosest)
+          CLUSTER_ID.add(1)
+          returnedCluster
         }).toIterator
       }
       else {
         data.map(point => {
-          Cluster(Array(point), 0,  Array(point), null, point)
+          val returnedCluster: Cluster = Cluster(Array(point), CLUSTER_ID.value,  Array(point), null, point, Double.MaxValue)
+          CLUSTER_ID.add(1)
+          returnedCluster
         }).toIterator
       }
     }

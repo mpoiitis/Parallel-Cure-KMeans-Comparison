@@ -120,32 +120,6 @@ class MinHeap(size: Int){
     }
   }
 
-//  /*
-//    Remove the cluster of the specific index from the MinHeap
-//   */
-//  def delete(cluster: Cluster): Cluster = {
-//
-//    // take the index of the cluster with the given id
-//    var nodeIndex = minHeap.indexOf(cluster)
-//
-//    // declare the best possible minimum as the distance for the cluster we want to remove
-//    // so as to move up the whole MinHeap
-//    val delClusterDistance : Double = scala.Double.MinValue
-//    var parentCluster = minHeap(this.parent(nodeIndex))
-//
-//    //move up the whole MinHeap
-//    while ( nodeIndex != 0 && Utils.clusterDistance(parentCluster, parentCluster.closest) > delClusterDistance){
-//      this.swap(nodeIndex, this.parent(nodeIndex))
-//      nodeIndex = this.parent(nodeIndex)
-//
-//      parentCluster = minHeap(this.parent(nodeIndex))
-//    }
-//
-//    // the element we wanted to remove has now reached the root of the MinHeap
-//    // so extract the root
-//    this.extractMin()
-//  }
-
   /*
   Removes the min (root) element from the MinHeap
  */

@@ -50,33 +50,23 @@ class MinHeap(size: Int){
    */
   def insert(cluster: Cluster): Unit = {
 
+    // cannot add any further elements
+    if (currentSize >= size){
+      return
+    }
+
     if (currentSize == 0){
       minHeap(0) = cluster
+      currentSize += 1
       return
     }
 
     // insert new cluster at the end
-    currentSize += 1
     minHeap(currentSize) = cluster
-
     //traverse the heap to relocate new cluster in the proper position
     this.moveUp(currentSize)
 
-  }
-
-  /*
-    Removes the min (root) element from the MinHeap
-   */
-  def extractMin(): Cluster = {
-
-    // store the root value to return and find the new root
-    val root : Cluster = minHeap(0)
-    minHeap(0) = minHeap(currentSize) // move last element to the root
-    minHeap(currentSize) = null // remove last element as it has been moved to the root
-    currentSize -= 1
-    this.moveDown(0)
-
-    root
+    currentSize += 1
   }
 
   def heapify(index: Int): Unit = {
@@ -92,9 +82,9 @@ class MinHeap(size: Int){
   }
 
   def moveUp(current: Int): Unit = {
-    val parent = current/2
+    val parent = this.parent(current)
 
-    if(minHeap(parent).distanceFromClosest > minHeap(current).distanceFromClosest){ //do swap
+    if(minHeap(current).distanceFromClosest < minHeap(parent).distanceFromClosest){ //do swap
       this.swap(current, parent)
       this.moveUp(parent)
     }
@@ -102,8 +92,8 @@ class MinHeap(size: Int){
 
   def moveDown(current: Int) : Unit= {
 
-    val left: Int = leftChild(current)
-    val right: Int = rightChild(current)
+    val left: Int = this.leftChild(current)
+    val right: Int = this.rightChild(current)
 
     var min = {        // Compare with left child
       if(left <= currentSize && minHeap(left).distanceFromClosest < minHeap(current).distanceFromClosest) {
@@ -128,36 +118,62 @@ class MinHeap(size: Int){
     }
   }
 
+//  /*
+//    Remove the cluster of the specific index from the MinHeap
+//   */
+//  def delete(cluster: Cluster): Cluster = {
+//
+//    // take the index of the cluster with the given id
+//    var nodeIndex = minHeap.indexOf(cluster)
+//
+//    // declare the best possible minimum as the distance for the cluster we want to remove
+//    // so as to move up the whole MinHeap
+//    val delClusterDistance : Double = scala.Double.MinValue
+//    var parentCluster = minHeap(this.parent(nodeIndex))
+//
+//    //move up the whole MinHeap
+//    while ( nodeIndex != 0 && Utils.clusterDistance(parentCluster, parentCluster.closest) > delClusterDistance){
+//      this.swap(nodeIndex, this.parent(nodeIndex))
+//      nodeIndex = this.parent(nodeIndex)
+//
+//      parentCluster = minHeap(this.parent(nodeIndex))
+//    }
+//
+//    // the element we wanted to remove has now reached the root of the MinHeap
+//    // so extract the root
+//    this.extractMin()
+//  }
+
   /*
-    Remove the cluster of the specific index from the MinHeap
-   */
-  def delete(cluster: Cluster): Cluster = {
+  Removes the min (root) element from the MinHeap
+ */
+  def extractMin(): Cluster = {
 
-    // take the index of the cluster with the given id
-    var nodeIndex = minHeap.indexOf(cluster)
+    val root: Cluster = minHeap(0)
+    minHeap(0) = minHeap(currentSize-1) // move last element to the root
+    currentSize -= 1
+    this.moveDown(0)
 
-    // declare the best possible minimum as the distance for the cluster we want to remove
-    // so as to move up the whole MinHeap
-    val delClusterDistance : Double = scala.Double.MinValue
-    var parentCluster = minHeap(this.parent(nodeIndex))
+    minHeap(currentSize) = null // remove last element as it has been moved to the root
 
-    //move up the whole MinHeap
-    while ( nodeIndex != 0 && Utils.clusterDistance(parentCluster, parentCluster.closest) > delClusterDistance){
-      this.swap(nodeIndex, this.parent(nodeIndex))
-      nodeIndex = this.parent(nodeIndex)
-
-      parentCluster = minHeap(this.parent(nodeIndex))
-    }
-
-    // the element we wanted to remove has now reached the root of the MinHeap
-    // so extract the root
-    this.extractMin()
+    root
   }
 
-  def delete(index:Int):Unit = {
-    minHeap(index) = minHeap(currentSize)
+  /*
+    Same rationale as extract min. Instead of moveDown we execute heapify,
+    because the removed element may cause both upward and downward changes.
+    Thus, it is different than the case of root removal
+   */
+  def delete(index:Int): Cluster = {
+
+    val deleted: Cluster = minHeap(index)
+    minHeap(index) = minHeap(currentSize-1)
     currentSize-=1
     this.heapify(index)
+
+    minHeap(currentSize) = null
+
+    deleted
   }
 
   override def toString: String = {

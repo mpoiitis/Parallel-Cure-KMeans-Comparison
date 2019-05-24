@@ -19,9 +19,10 @@ object Cure {
     val idCounter = ss.sparkContext.longAccumulator
     val dataRdd = data.rdd
 
-    val points : RDD[Point] = dataRdd.map(a => {  // assign cluster id to each point
-      val p =Point(Array(a.getDouble(0), a.getDouble(1)), cluster = null)
-      p.cluster = Cluster(Array(p), 0, Array(p), null,p)
+    // initially each point is a separate cluster
+    val points : RDD[Point] = dataRdd.map(instance => {  // assign cluster id to each point
+      val p =Point(Array(instance.getDouble(0), instance.getDouble(1)), cluster = null)
+      p.cluster = Cluster(points = Array(p), id = idCounter.value, representatives = Array(p), closest = null, meanPoint = p)
       idCounter.add(1)
       p
     }).cache()
@@ -55,7 +56,12 @@ object Cure {
     Given a point list and a Kd tree create a heap from the points and the calculated closest points and clusters
    */
   def createHeap(points: List[Point], kdTree: KdTree) : MinHeap = {
+
     val minHeap = new MinHeap(points.length)
+    val log = LogManager.getRootLogger
+    log.warn("Points: " + points.length)
+    log.warn("Tree size: " + kdTree.getSize)
+    log.warn("Heap size before: " + minHeap.getSize)
     points.map(point => {
       val closestPoint = kdTree.closestClusterPoint(point)
       point.cluster.closest = closestPoint.cluster // Assign the cluster of the closest point to the closest field of the point's cluster
@@ -63,6 +69,8 @@ object Cure {
       minHeap.insert(point.cluster)
       point.cluster
     })
+    log.warn("Heap size after: " + minHeap.getSize)
+    log.warn("++++++++++++")
     minHeap
   }
 
@@ -219,6 +227,8 @@ object Cure {
         val kdTree: KdTree = createTree(data)
         val minHeap: MinHeap = createHeap(data, kdTree)
 
+        val log = LogManager.getRootLogger
+        log.warn("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
         // implementation of cluster algorithm of original paper (figure 5)
         while (minHeap.getSize > k) {
           val u: Cluster = minHeap.extractMin()
@@ -244,11 +254,6 @@ object Cure {
 //          for (i <- 0 to minHeap.getSize){
 //            val x: Cluster = minHeap.getMinHeap(i)
 //
-//            val log = LogManager.getRootLogger
-//            log.warn(x)
-//            log.warn(u)
-//            log.warn(v)
-//            log.warn("=============")
 //            // if cluster closer to x is either u or v
 //            if (x.closest == u || x.closest == v){
 //              if (Utils.clusterDistance(x, x.closest) < Utils.clusterDistance(x, w)){
@@ -275,6 +280,8 @@ object Cure {
         }
 
 
+        log.warn(minHeap.getSize)
+        log.warn("===================")
         minHeap.getMinHeap.map(cluster => {
           cluster.points.foreach(_.cluster = null)
           val reps = cluster.representatives

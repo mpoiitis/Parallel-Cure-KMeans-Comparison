@@ -9,6 +9,9 @@ case class Node(point: Point, var left: Node, var right: Node, var deleted: Bool
  */
 class KdTree(var root: Node, k: Int) {
 
+  private var size: Int = 0
+
+  def getSize: Int = size
   /*
     Creates a new node with no left and right children
    */
@@ -18,6 +21,7 @@ class KdTree(var root: Node, k: Int) {
     Wrapper function to abstract insertion of point in tree
    */
   def insert(point: Point): Node = {
+    size += 1
     insertRecursive(this.root, point, 0)
   }
 
@@ -157,6 +161,7 @@ class KdTree(var root: Node, k: Int) {
     Wrapper function to abstract deletion of a point in the tree
    */
   def delete(point: Point): Node = {
+    size -= 1
     deleteRecursive(this.root, point, 0)
   }
 
@@ -285,6 +290,9 @@ class KdTree(var root: Node, k: Int) {
     }
   }
 
+  /*
+    Return the point closer to refPoint
+   */
   def closestPoint(refPoint: Point, point1: Point, point2: Point): Point = {
 
     if (point1 == null){

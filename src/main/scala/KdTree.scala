@@ -9,7 +9,7 @@ case class Node(point: Point, var left: Node, var right: Node, var deleted: Bool
  */
 class KdTree(var root: Node, k: Int) {
 
-  private var size: Int = 0
+  private var size: Int = 1 // tree is created with a root node, thus it already contains a node
 
   def getSize: Int = size
   /*

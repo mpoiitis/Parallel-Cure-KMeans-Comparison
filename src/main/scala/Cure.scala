@@ -46,7 +46,7 @@ object Cure {
     val root = points.head
 
     val kdTree = new KdTree(Node(root, null, null), root.dimensions.length)
-    for (i <- 1 until points.length - 1) {
+    for (i <- 1 until points.length) {
       kdTree.insert(points(i))
     }
     kdTree

@@ -2,7 +2,9 @@
   * Created by Zaikis Dimitrios, 8 and Poiitis Marinos, 17 on 13/05/2019.
   */
 
+
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 
@@ -35,7 +37,9 @@ object Main {
 
     val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y")
 
-    Cure.run(data, 5, 5, ss)
+
+
+//    Cure.run(data, 5, 5, ss)
 //
 //    val p1 = Point(Array(30, 40))
 //    val p2 = Point(Array(5, 25))

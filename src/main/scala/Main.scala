@@ -37,77 +37,8 @@ object Main {
 
     val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y")
 
-
-
-//    Cure.run(data, 5, 5, ss)
-//
-//    val p1 = Point(Array(30, 40))
-//    val p2 = Point(Array(5, 25))
-//    val p3 = Point(Array(70, 70))
-//    val p4 = Point(Array(10, 12))
-//    val p5 = Point(Array(50, 30))
-//    val p6 = Point(Array(35, 45))
-//
-//    val c = Cluster(Array(p3))
-//    val c2 = Cluster(Array(p4, p5, p6), closest = c, id = 2)
-//    val c1 = Cluster(Array(p1, p2), closest = c2, id = 1)
-//
-//    p1.cluster = c1
-//    p2.cluster = c1
-//    p3.cluster = c
-//    p4.cluster = c2
-//    p5.cluster = c2
-//    p6.cluster = c2
-
-//    c.closest = c2
-//    c.distanceFromClosest = 60
-//    c2.distanceFromClosest = 60
-//    c1.distanceFromClosest = 10
-//    // KD Tree Test
-//
-//    var root = Node(p1, null, null)
-//    val tree = new KdTree(root, k = 2)
-//
-//    tree.insert(p2)
-//    tree.insert(p3)
-//    tree.insert(p4)
-//    tree.insert(p5)
-//    tree.insert(p6)
-//
-//
-//    // KD Tree Search Test
-//    println(tree.search(p3))
-//    println(tree.search(Point(Array(23, 222))))
-//    // KD Tree Find Minimum Test
-//    println("Minimum of 0'th dimension is " + tree.findMinimum(root, 0).point.dimensions(0))
-//    println("Minimum of 1'th dimension is " + tree.findMinimum(root, 1).point.dimensions(1))
-//    // KD Tree Deletion Test
-//    root = tree.delete(root.point)
-//    println("Root after deletion of (30, 40)")
-//    println(root.point.dimensions(0) +", " + root.point.dimensions(1))
-//
-//    // KD Tree Closest Point of Different Cluster Test
-//    println("Closest point to (30, 40): " + tree.closestClusterPoint(p1))
-
-//    // Min Heap Test
-//
-//    val minHeap = new MinHeap(11)
-//
-//    minHeap.insert(c)
-//    println(minHeap)
-//    minHeap.insert(c1)
-//    println(minHeap)
-//    minHeap.insert(c2)
-//    println(minHeap)
-//    println("=================")
-//    println(minHeap)
-//    println(minHeap.extractMin())
-//    println(minHeap)
-//    println("=================")
-//    minHeap.insert(c1)
-//    println(minHeap)
-//    println(minHeap.delete(2))
-//    println(minHeap)
+    val shas = new SHAS(data, ss)
+    shas.run()
   }
 
 

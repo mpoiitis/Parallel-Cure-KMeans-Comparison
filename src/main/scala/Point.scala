@@ -32,5 +32,5 @@ case class Point(var dimensions: Array[Double] = null, var id: Long = 0) {
     !(distWiseEquality.length > 0)
   }
 
-  override def toString: String = "Id:" + this.id + " - (" + this.dimensions.mkString(" ") + ")"
+  override def toString: String = this.id + " " + this.dimensions.mkString(",")
 }

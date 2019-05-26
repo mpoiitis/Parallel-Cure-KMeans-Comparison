@@ -1,14 +1,14 @@
-case class UnionFind(id: Array[Long], count: Long) {
+case class UnionFind(id: Array[Int], var count: Int) {
 
-  def this(elements: Long){
+  def this(elements: Int){
     this(Array.range(0, elements.toInt) ,elements)
   }
 
-  def find(element: Long): Long ={
+  def find(element: Int): Int ={
 
     require(element >= 0 && element < this.id.length)
 
-    var el: Long = element
+    var el: Int = element
     while (el != this.id(el)){
       el = this.id(el)
     }
@@ -19,12 +19,12 @@ case class UnionFind(id: Array[Long], count: Long) {
   /*
     Returns true if the union was successful and reduces the number of elements in the structure
    */
-  def union(left: Long, right: Long): Boolean ={
+  def union(left: Int, right: Int): Boolean ={
 
-    val l: Long = this.find(left)
-    val r: Long = this.find(right)
+    val l: Int = this.find(left)
+    val r: Int = this.find(right)
 
-    val bigger: Long = {
+    val bigger: Int = {
       if (l > r) l
       else r
     }
@@ -46,10 +46,10 @@ case class UnionFind(id: Array[Long], count: Long) {
     Speeds up future operations
    */
 
-  def pathCompression(element: Long, bigger: Long): Unit ={
+  def pathCompression(element: Int, bigger: Int): Unit ={
 
-    var el: Long = element
-    var parent: Long = 0
+    var el: Int = element
+    var parent: Int = 0
 
     while (el != this.id(el)){
       parent = this.id(el)

@@ -37,7 +37,7 @@ class FileCreator(sc: SparkContext, numSplits: Int = 2) {
     log.warn("Num of partitions: " + numSplits)
     val points : RDD[Point] = data.zipWithIndex.map{ case (row, i) =>
       val dimensions = Array(row.getDouble(0), row.getDouble(1))
-      Point(dimensions, i)
+      Point(dimensions, i.toInt)
     }
 
     val file = new File(dataParτitionFilesLocation)

@@ -1,10 +1,10 @@
-case class Point(var dimensions: Array[Double] = null, var id: Long = 0) {
+case class Point(var dimensions: Array[Double] = null, var id: Int = 0) {
 
   def this(point: Point){
     this(point.dimensions.clone(), point.id)
   }
 
-  def getDimension: Long ={
+  def getDimension:Int ={
     this.dimensions.length
   }
 

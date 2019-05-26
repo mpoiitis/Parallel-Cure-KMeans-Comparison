@@ -39,6 +39,9 @@ object Main {
 
     val shas = new SHAS(data, ss)
     shas.run()
+
+    Thread.sleep(30000000)
+    ss.stop()
   }
 
 

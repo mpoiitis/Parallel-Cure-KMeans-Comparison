@@ -96,7 +96,7 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
             switch = true
             otherPoint = nextRight(i)
 
-            var distance: Double = localLeft(currentPoint).distanceFrom(localRight(otherPoint))
+            val distance: Double = localLeft(currentPoint).distanceFrom(localRight(otherPoint))
             // found a smaller distance, update the corresponding values
             if (distanceRight(otherPoint) > distance) {
               distanceRight(otherPoint) = distance
@@ -183,8 +183,8 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
         otherPoint = parentLeft(currentPoint)
 
         val minimum: Double = distanceLeft(currentPoint)
-        var globalNext: Int = localRight(otherPoint).id
-        var globalNextParent: Int = localLeft(currentPoint).id
+        val globalNext: Int = localRight(otherPoint).id
+        val globalNextParent: Int = localLeft(currentPoint).id
 
         val edge: Edge = Edge(Math.min(globalNext, globalNextParent), Math.max(globalNext, globalNextParent), minimum)
         edges += Tuple2(this.id, edge)

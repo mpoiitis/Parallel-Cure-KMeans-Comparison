@@ -8,6 +8,13 @@ class SHAS(data: DataFrame, ss: SparkSession) extends Serializable {
 
   @transient val  log: Logger = LogManager.getRootLogger
 
+  /*
+    A dataset D is divided into two disjoint data sets D1 and D2, forming 3 sub graphs
+    G(D1), G(D2), Gb(D1, D2) where Gb(D1, D2) is the complete bipartite graph on D1 and D2
+    and G(D1), G(D2) the complete weighted graphs of D1 and D2 accordingly
+    In this way, any possible edge is assigned to some sub graph
+    and taking the union of these would return the original graph
+   */
   def run(): Unit ={
 
     val numPoints: Int = data.count().toInt
@@ -30,8 +37,9 @@ class SHAS(data: DataFrame, ss: SparkSession) extends Serializable {
 
     val end: Long = System.currentTimeMillis()
 
-    log.warn("Total time: " + (end - start))
     log.warn(subMSTs.count())
+    log.warn("Total time: " + (end - start))
+
   }
 
   /*

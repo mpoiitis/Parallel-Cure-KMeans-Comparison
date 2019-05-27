@@ -23,6 +23,70 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
     edgeList
   }
 
+  def prim(): Array[(Int, Edge)] = {
+    val data: Array[Point] = this.left
+    val numPoints: Int = data.length
+
+    var edges: ListBuffer[(Int, Edge)] = new ListBuffer[(Int, Edge)]()
+
+    val left: Array[Int] = new Array[Int](numPoints)
+    val parent: Array[Int] = new Array[Int](numPoints)
+    val distances: Array[Double] = new Array[Double](numPoints)
+
+    for (i <- 0 until numPoints){
+      left(i) = i+1
+      distances(i) = Double.MaxValue
+    }
+
+    distances(0) = 0
+    parent(0) = -1
+
+    var currentPoint: Int = 0
+    var otherPoint: Int = 0
+    var next: Int = 0
+    var shift = 0
+
+    for (i <- (numPoints - 1) to 0 by -1){
+
+      shift = 0
+      currentPoint = next
+      next = left(shift)
+
+      // find the cheapest edge for the right split
+      var minimum: Double = Double.MaxValue
+      for (j <- 0 until i){
+        otherPoint = left(j)
+        val distance = data(currentPoint).distanceFrom(data(otherPoint))
+        if (distances(otherPoint) > distance){
+          distances(otherPoint) = distance
+          parent(otherPoint) = currentPoint
+        }
+
+        if (distances(otherPoint) < minimum) {
+          minimum = distances(otherPoint)
+          next = otherPoint
+          shift = i
+        }
+      }
+
+      val globalNext: Int = data(next).id
+      val globalNextParent: Int = data(parent(next)).id
+
+      // append in edges
+      val edge: Edge = Edge(Math.min(globalNext, globalNextParent), Math.max(globalNext, globalNextParent), minimum)
+      edges += Tuple2(this.id, edge)
+
+      if (!(i-1 < 0)){
+        left(shift) = left(i-1)
+      }
+
+    }
+
+    edges = edges.sortWith(sortByEdgeWeight)
+    log.warn("Not bipartite num of edges: " + edges.toArray.length)
+    edges.toArray
+  }
+
   /*
     An edge weight array for each of the 2 splits
     Select vertex v0 in the left split
@@ -83,10 +147,11 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
       var next: Int = 0
       var otherPoint: Int = 0
       var switch: Boolean = true
+      var shift = 0
 
       while (rightTracking > 0) {
 
-          var shift = 0
+          shift = 0
           currentPoint = next
           next = nextRight(shift)
 
@@ -191,6 +256,7 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
       }
 
       edges = edges.sortWith(sortByEdgeWeight)
+      log.warn("Bipartite num of edges: " + edges.toArray.length)
       edges.toArray
   }
 
@@ -199,10 +265,5 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
     val edge2: Edge = e2._2
 
     edge1.weight < edge2.weight
-  }
-
-
-  def prim(): Array[(Int, Edge)] = {
-    null
   }
 }

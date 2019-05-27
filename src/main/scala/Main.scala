@@ -37,8 +37,8 @@ object Main {
 
     val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y")
 
-    val shas = new SHAS(data, ss)
-    shas.run()
+    val shas = new SHAS(data, dims=2, splits=2, k=3, ss)
+    shas.run(clusters = 3)
 
     Thread.sleep(30000000)
     ss.stop()

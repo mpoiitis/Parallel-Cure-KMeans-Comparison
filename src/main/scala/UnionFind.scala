@@ -4,11 +4,15 @@ case class UnionFind(id: Array[Int], var count: Int) {
     this(Array.range(0, elements.toInt) ,elements)
   }
 
+  /*
+    Find the set of an element (edge). E.g. if set = (0, 1, 2) then 0 's set is 2 because 0 -> 1 -> 2
+   */
   def find(element: Int): Int ={
 
     require(element >= 0 && element < this.id.length)
 
     var el: Int = element
+    // find root
     while (el != this.id(el)){
       el = this.id(el)
     }
@@ -18,6 +22,7 @@ case class UnionFind(id: Array[Int], var count: Int) {
 
   /*
     Returns true if the union was successful and reduces the number of elements in the structure
+    If false then the union of those two edges forms a cycle
    */
   def union(left: Int, right: Int): Boolean ={
 

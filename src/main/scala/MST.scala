@@ -9,7 +9,8 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
   val isBipartite: Boolean = if(right == null) false else true
   val log: Logger = LogManager.getRootLogger
 
-  if(isBipartite) log.warn("Bipartite Sub-MST") else log.warn("Not Bipartite Sub-MST")
+//  if(isBipartite) log.warn("Bipartite Sub-MST") else log.warn("Not Bipartite Sub-MST")
+
   /*
     return the tree's edges as array
    */

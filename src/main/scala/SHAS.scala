@@ -12,8 +12,8 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
   @transient val  log: Logger = LogManager.getRootLogger
   val numPoints: Int = data.count().toInt
-  val numDimensions: Int = 2
-  val numSplits: Int = 2
+  val numDimensions: Int = dims
+  val numSplits: Int = splits
   val K: Int = k
 
   log.warn("Number of points: " + numPoints)
@@ -28,13 +28,13 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     In this way, any possible edge is assigned to some sub graph
     and taking the union of these would return the original graph
    */
-  def run(clusters: Int): Unit ={
+  def run(numClusters: Int): Unit ={
 
 //    var numGraphs: Int = numSplits * numSplits / 2
 //    numGraphs = (numGraphs + (K-1)) / K
     var numGraphs: Int = numSplits * (numSplits - 1) / 2 + numSplits
 
-    val fileCreator = new FileCreator(ss.sparkContext)
+    val fileCreator = new FileCreator(ss.sparkContext, numSplits)
     fileCreator.createPartitionFiles(numGraphs = numGraphs)
     fileCreator.writeSequenceFiles(data.rdd, numPoints, numDimensions)
 
@@ -58,11 +58,13 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
 //    mstToBeMerged.collect().foreach(instance => println(instance._1 + ": " + instance._2.foreach(println)))
 
+
+    val clusters: Array[(Array[Int], Int)] = extractClusters(mstToBeMerged, numClusters).zipWithIndex
     val end: Long = System.currentTimeMillis()
-    log.warn("Total time: " + (end - start))
+    log.warn("Total time: " + (end - start) + " ms")
 
-    val c: Array[Array[Int]] = extractClusters(mstToBeMerged, clusters)
 
+    clusters.foreach{case (cluster, id) => println("Cluster id: " + id + " Num of points: " + cluster.length + " Points: (" + cluster.mkString(" ") + ")")}
   }
 
   /*
@@ -78,9 +80,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
       return returned.toArray
     }
 
-    var edges: Iterable[Edge] = mstToBeMerged.map(_._2).collect()(0) // we are sure there is only one MST, so collect each edges
-
-    edges.foreach(println)
+    val edges: Iterable[Edge] = mstToBeMerged.map(_._2).collect()(0) // we are sure there is only one MST, so collect each edges
 
     var edgeArray = edges.toArray
     // separate edges to remove from the rest edges
@@ -89,39 +89,42 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
       removedEdges += edgeArray(i)
     }
 
-    // remove removedEdges from edgeList
-    edgeArray = edgeArray.filter(edge => !(removedEdges contains edge))
 
     // for each edge node create a cluster containing all of its subnodes
-    val clusters: ListBuffer[ListBuffer[Int]] = new ListBuffer[ListBuffer[Int]]
+    var clusters: ListBuffer[ListBuffer[Int]] = new ListBuffer[ListBuffer[Int]]
 
+    // track the edges that have removed until a specific iteration
+    val removedTracking: ListBuffer[Edge] = new ListBuffer[Edge]
     // iterate over the removed edges
     for (edge <- removedEdges){
-      // if end then we have completed the traversal of nodes
+
+        // remove all the examined "removed edges" from the MST
+        removedTracking += edge
+        edgeArray = edgeArray.filter(e => !(removedTracking contains e))
 
         val left: Int = edge.left
         val right: Int = edge.right
 
-        println("Edge: " + left + " - " + right)
+        println("Remove edge: " + left + " - " + right)
 
-        if (clusters.isEmpty) {
-          // find left node's subtree
-          clusters += this.updateClusters(left, edgeArray)
-          println("Left ended")
-          // find right node's subtree
-          clusters += this.updateClusters(right, edgeArray)
-          println("Right ended")
-        }// more than 2 clusters. we need to find the parent cluster of the divided ones and remove it from the list before inserting the 2 new clusters
-        else{
+        // more than 2 clusters. we need to find the parent cluster of the divided ones and remove it from the list before inserting the 2 new clusters
+        if (clusters.nonEmpty) {
+          // both edge sides will belong to the same cluster, just find for one of them and remove this cluster
+          clusters = clusters.filter(cluster => !(cluster contains left))
 
         }
+
+        // find left node's subtree
+        clusters += this.updateClusters(left, edgeArray)
+
+        // find right node's subtree
+        clusters += this.updateClusters(right, edgeArray)
+
       }
 
-
     // convert listbuffer to array
-    val returned = clusters.map(x => x.toArray)
-    returned.foreach(arr => println(arr.foreach(el => print(el + " "))))
-    returned.toArray
+    clusters.map(x => x.toArray).toArray
+
   }
 
   /*
@@ -149,8 +152,6 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
       }
     }
 
-    println("Cluster of " + node)
-    clusters.foreach(println)
     clusters
   }
 

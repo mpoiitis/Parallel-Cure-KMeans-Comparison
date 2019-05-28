@@ -35,12 +35,12 @@ object Main {
 //    println(numOfExamples)
 //    println(data.count())
 
-    val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y")
+    val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y").sample(0.0002)
 
     val shas = new SHAS(data, dims=2, splits=2, k=3, ss)
-    shas.run(clusters = 3)
+    shas.run(clusters = 2)
 
-    Thread.sleep(30000000)
+//    Thread.sleep(30000000)
     ss.stop()
   }
 

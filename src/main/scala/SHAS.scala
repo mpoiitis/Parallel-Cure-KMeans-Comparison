@@ -56,28 +56,102 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
                     numGraphs)
     }
 
-    mstToBeMerged.collect().foreach(instance => println(instance._1 + ": " + instance._2.foreach(println)))
+//    mstToBeMerged.collect().foreach(instance => println(instance._1 + ": " + instance._2.foreach(println)))
 
     val end: Long = System.currentTimeMillis()
     log.warn("Total time: " + (end - start))
+
+    val c: Array[Array[Int]] = extractClusters(mstToBeMerged, clusters)
 
   }
 
   /*
     For k clusters, remove the first k cheapest edges. The arising connected components are the clusters
    */
-  def extractClusters(mstToBeMerged: RDD[(Int, Iterable[Edge])], clusters: Int): Array[Array[Edge]] = {
+  def extractClusters(mstToBeMerged: RDD[(Int, Iterable[Edge])], numClusters: Int): Array[Array[Int]] = {
+
+    // if we want a single cluster, just return the nodes in the MST
+    if (numClusters == 1) {
+      val returned = new ListBuffer[Array[Int]]
+      returned += mstToBeMerged.map(_._2.toArray).collect().flatten.map( (e: Edge) => e.left)
+
+      return returned.toArray
+    }
+
     var edges: Iterable[Edge] = mstToBeMerged.map(_._2).collect()(0) // we are sure there is only one MST, so collect each edges
 
+    edges.foreach(println)
+
+    var edgeArray = edges.toArray
     // separate edges to remove from the rest edges
     val removedEdges: ListBuffer[Edge] = new ListBuffer[Edge]
-    for (i <- 0 until clusters){
-      removedEdges += edges(i)
+    for (i <- 0 until numClusters - 1){
+      removedEdges += edgeArray(i)
     }
 
     // remove removedEdges from edgeList
-    edges = edges.filter(edge => !(removedEdges contains edge))
-    null
+    edgeArray = edgeArray.filter(edge => !(removedEdges contains edge))
+
+    // for each edge node create a cluster containing all of its subnodes
+    val clusters: ListBuffer[ListBuffer[Int]] = new ListBuffer[ListBuffer[Int]]
+
+    // iterate over the removed edges
+    for (edge <- removedEdges){
+      // if end then we have completed the traversal of nodes
+
+        val left: Int = edge.left
+        val right: Int = edge.right
+
+        println("Edge: " + left + " - " + right)
+
+        if (clusters.isEmpty) {
+          // find left node's subtree
+          clusters += this.updateClusters(left, edgeArray)
+          println("Left ended")
+          // find right node's subtree
+          clusters += this.updateClusters(right, edgeArray)
+          println("Right ended")
+        }// more than 2 clusters. we need to find the parent cluster of the divided ones and remove it from the list before inserting the 2 new clusters
+        else{
+
+        }
+      }
+
+
+    // convert listbuffer to array
+    val returned = clusters.map(x => x.toArray)
+    returned.foreach(arr => println(arr.foreach(el => print(el + " "))))
+    returned.toArray
+  }
+
+  /*
+    Add node to its cluster and traverse the MST top-down to insert children too
+   */
+  def updateClusters(node: Int, edges: Array[Edge]): ListBuffer[Int] = {
+
+    var clusters = new ListBuffer[Int]
+
+    val nodeEdges: Array[Edge] = edges.filter(edge => edge.left == node || edge.right == node)
+
+    // add node to cluster
+    clusters += node
+
+    // if there are edges with children traverse
+    if (nodeEdges.length > 0 ) {
+      // for each node's edge take the node on the other side of this edge
+      for (j <- nodeEdges.indices) {
+        val otherNode: Int = if (nodeEdges(j).left == node) nodeEdges(j).right else nodeEdges(j).left
+
+        // remove the current edge from edge list
+        val newEdges: Array[Edge] = edges.filter(edge => edge != nodeEdges(j))
+        // recurse for other node
+        clusters ++= updateClusters(otherNode, newEdges)
+      }
+    }
+
+    println("Cluster of " + node)
+    clusters.foreach(println)
+    clusters
   }
 
   /*

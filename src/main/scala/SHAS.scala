@@ -28,7 +28,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     In this way, any possible edge is assigned to some sub graph
     and taking the union of these would return the original graph
    */
-  def run(numClusters: Int): Unit ={
+  def run(numClusters: Int): Array[(Array[Int], Int)] ={
 
 //    var numGraphs: Int = numSplits * numSplits / 2
 //    numGraphs = (numGraphs + (K-1)) / K
@@ -65,6 +65,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
 
     clusters.foreach{case (cluster, id) => println("Cluster id: " + id + " Num of points: " + cluster.length + " Points: (" + cluster.mkString(" ") + ")")}
+    clusters
   }
 
   /*
@@ -270,8 +271,8 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     }
 
     // actual filenames
-    val leftFile: String = fileLocation + "/part-0000" + left
-    val rightFile: String = fileLocation + "/part-0000" + right
+    val leftFile: String =  f"$fileLocation%s/part-$left%05d"
+    val rightFile: String = f"$fileLocation%s/part-$right%05d"
 
     // get points from left file
     val leftPoints: Array[Point] = Source.fromFile(leftFile).getLines().toArray.map(stringPoint => {

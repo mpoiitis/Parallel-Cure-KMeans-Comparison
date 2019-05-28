@@ -35,10 +35,10 @@ object Main {
 //    println(numOfExamples)
 //    println(data.count())
 
-    val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y")
+    val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y").sample(0.5)
 
-    val shas = new SHAS(data, splits = 4, ss = ss)
-    shas.run(numClusters = 10)
+    val shas = new SHAS(data, splits = 6, ss = ss)
+    val clusters: Array[(Array[Int], Int)] = shas.run(numClusters = 3)
 
 //    Thread.sleep(30000000)
     ss.stop()

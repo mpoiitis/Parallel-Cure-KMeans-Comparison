@@ -70,11 +70,14 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
         }
       }
 
-      val globalNext: Int = data(next).id
-      val globalNextParent: Int = data(parent(next)).id
+      val globalNext: Point = data(next)
+      val globalNextParent: Point = data(parent(next))
+
+      val globalMin: Point = if (Math.min(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
+      val globalMax: Point = if (Math.max(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
 
       // append in edges
-      val edge: Edge = Edge(Math.min(globalNext, globalNextParent), Math.max(globalNext, globalNextParent), minimum)
+      val edge: Edge = Edge(globalMin, globalMax, minimum)
       edges += Tuple2(this.id, edge)
 
       if (!(i-1 < 0)){
@@ -182,8 +185,8 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
           }
 
           // find minimum of both splits
-          var globalNext: Int = localRight(next).id
-          var globalNextParent: Int = localLeft(parentRight(next)).id
+          var globalNext: Point = localRight(next)
+          var globalNextParent: Point = localLeft(parentRight(next))
 
           for (i <- 0 until leftTracking) {
             currentPoint = nextLeft(i)
@@ -194,8 +197,8 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
 
               otherPoint = parentLeft(currentPoint)
               switch = false
-              globalNextParent = localLeft(currentPoint).id
-              globalNext = localRight(otherPoint).id
+              globalNextParent = localLeft(currentPoint)
+              globalNext = localRight(otherPoint)
             }
           }
 
@@ -208,8 +211,10 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
             nextLeft(0) = nextLeft(leftTracking)
           }
 
+          val globalMin: Point = if (Math.min(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
+          val globalMax: Point = if (Math.max(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
           // append in edges
-          val edge: Edge = Edge(Math.min(globalNext, globalNextParent), Math.max(globalNext, globalNextParent), minimum)
+          val edge: Edge = Edge(globalMin, globalMax, minimum)
           edges += Tuple2(this.id, edge)
 
           // the next elements comes from the left split
@@ -249,10 +254,13 @@ class MST(pair: (Array[Point], Array[Point]), id: Int){
         otherPoint = parentLeft(currentPoint)
 
         val minimum: Double = distanceLeft(currentPoint)
-        val globalNext: Int = localRight(otherPoint).id
-        val globalNextParent: Int = localLeft(currentPoint).id
+        val globalNext: Point = localRight(otherPoint)
+        val globalNextParent: Point = localLeft(currentPoint)
 
-        val edge: Edge = Edge(Math.min(globalNext, globalNextParent), Math.max(globalNext, globalNextParent), minimum)
+        val globalMin: Point = if (Math.min(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
+        val globalMax: Point = if (Math.max(globalNext.id, globalNextParent.id) == globalNext.id) globalNext else globalNextParent
+
+        val edge: Edge = Edge(globalMin, globalMax, minimum)
         edges += Tuple2(this.id, edge)
       }
 

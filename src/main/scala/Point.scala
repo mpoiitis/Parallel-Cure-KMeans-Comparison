@@ -23,13 +23,26 @@ case class Point(var dimensions: Array[Double] = null, var id: Int = 0) {
     else distance
   }
 
-  def equals(point: Point): Boolean ={
-    if (this.id != point.id) return false
 
-    val dim1 : Array[Double] = this.dimensions
-    val dim2 : Array[Double] = point.dimensions
-    val distWiseEquality : Array[Boolean] = (dim1 zip dim2).map{case (dimA, dimB) => dimA == dimB}.filter( condition => !condition)
-    !(distWiseEquality.length > 0)
+  def canEqual(a: Any): Boolean = a.isInstanceOf[Point]
+
+  override def equals(that: Any): Boolean = that match {
+    case that: Point => that.canEqual(this) && this.dimensions.deep == that.dimensions.deep && this.hashCode == that.hashCode
+    case _ => false
+  }
+
+//  {
+//    if (this.id != point.id) return false
+//
+//    val dim1 : Array[Double] = this.dimensions
+//    val dim2 : Array[Double] = point.dimensions
+//    val distWiseEquality : Array[Boolean] = (dim1 zip dim2).map{case (dimA, dimB) => dimA == dimB}.filter( condition => !condition)
+//    !(distWiseEquality.length > 0)
+//  }
+  override def hashCode: Int = {
+    var sum: Double = 0
+    this.dimensions.foreach(sum += _)
+    this.id * 157 + this.dimensions.length * 43 + sum.toInt
   }
 
   override def toString: String = this.id + " " + this.dimensions.mkString(",")

@@ -28,7 +28,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     In this way, any possible edge is assigned to some sub graph
     and taking the union of these would return the original graph
    */
-  def run(numClusters: Int): Array[(Array[Int], Int)] ={
+  def run(numClusters: Int): Array[(Array[Point], Int)] ={
 
 //    var numGraphs: Int = numSplits * numSplits / 2
 //    numGraphs = (numGraphs + (K-1)) / K
@@ -59,29 +59,40 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 //    mstToBeMerged.collect().foreach(instance => println(instance._1 + ": " + instance._2.foreach(println)))
 
 
-    val clusters: Array[(Array[Int], Int)] = extractClusters(mstToBeMerged, numClusters).zipWithIndex
+    val clusters: Array[(Array[Point], Int)] = extractClusters(mstToBeMerged, numClusters).zipWithIndex
     val end: Long = System.currentTimeMillis()
     log.warn("Total time: " + (end - start) + " ms")
 
 
     clusters.foreach{case (cluster, id) => println("Cluster id: " + id + " Num of points: " + cluster.length + " Points: (" + cluster.mkString(" ") + ")")}
     clusters
+
   }
 
   /*
     For k clusters, remove the first k cheapest edges. The arising connected components are the clusters
    */
-  def extractClusters(mstToBeMerged: RDD[(Int, Iterable[Edge])], numClusters: Int): Array[Array[Int]] = {
+  def extractClusters(mstToBeMerged: RDD[(Int, Iterable[Edge])], numClusters: Int): Array[Array[Point]] = {
 
     // if we want a single cluster, just return the nodes in the MST
     if (numClusters == 1) {
-      val returned = new ListBuffer[Array[Int]]
-      returned += mstToBeMerged.map(_._2.toArray).collect().flatten.map( (e: Edge) => e.left)
+      var returned = new ListBuffer[Array[Point]]
+      // keep only the left most nodes and remove duplicates
+      var leftPoints: Array[Point] = mstToBeMerged.map(_._2.toArray).collect().flatten.map(edge => edge.left).distinct
+      // keep only the right most nodes that are not present in left most nodes and remove duplicates
+      val rightPoints: Array[Point] = mstToBeMerged.map(_._2.toArray).collect().flatten.map(edge => edge.right).filter(!leftPoints.contains(_)).distinct
+
+      // should contain all of the nodes once
+      val totalPoints = leftPoints ++ rightPoints
+
+      returned += totalPoints
 
       return returned.toArray
     }
 
     val edges: Iterable[Edge] = mstToBeMerged.map(_._2).collect()(0) // we are sure there is only one MST, so collect each edges
+
+    edges.foreach(println)
 
     var edgeArray = edges.toArray
     // separate edges to remove from the rest edges
@@ -92,7 +103,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
 
     // for each edge node create a cluster containing all of its subnodes
-    var clusters: ListBuffer[ListBuffer[Int]] = new ListBuffer[ListBuffer[Int]]
+    var clusters: ListBuffer[ListBuffer[Point]] = new ListBuffer[ListBuffer[Point]]
 
     // track the edges that have removed until a specific iteration
     val removedTracking: ListBuffer[Edge] = new ListBuffer[Edge]
@@ -103,10 +114,10 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
         removedTracking += edge
         edgeArray = edgeArray.filter(e => !(removedTracking contains e))
 
-        val left: Int = edge.left
-        val right: Int = edge.right
+        val left: Point = edge.left
+        val right: Point = edge.right
 
-        println("Remove edge: " + left + " - " + right)
+        println("Remove edge: " + left.id + " - " + right.id)
 
         // more than 2 clusters. we need to find the parent cluster of the divided ones and remove it from the list before inserting the 2 new clusters
         if (clusters.nonEmpty) {
@@ -117,10 +128,10 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
         // find left node's subtree
         clusters += this.updateClusters(left, edgeArray)
-
+        println("Left ended")
         // find right node's subtree
         clusters += this.updateClusters(right, edgeArray)
-
+        println("Right ended")
       }
 
     // convert listbuffer to array
@@ -131,9 +142,9 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
   /*
     Add node to its cluster and traverse the MST top-down to insert children too
    */
-  def updateClusters(node: Int, edges: Array[Edge]): ListBuffer[Int] = {
+  def updateClusters(node: Point, edges: Array[Edge]): ListBuffer[Point] = {
 
-    var clusters = new ListBuffer[Int]
+    var clusters = new ListBuffer[Point]
 
     val nodeEdges: Array[Edge] = edges.filter(edge => edge.left == node || edge.right == node)
 
@@ -144,7 +155,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     if (nodeEdges.length > 0 ) {
       // for each node's edge take the node on the other side of this edge
       for (j <- nodeEdges.indices) {
-        val otherNode: Int = if (nodeEdges(j).left == node) nodeEdges(j).right else nodeEdges(j).left
+        val otherNode: Point = if (nodeEdges(j).left == node) nodeEdges(j).right else nodeEdges(j).left
 
         // remove the current edge from edge list
         val newEdges: Array[Edge] = edges.filter(edge => edge != nodeEdges(j))
@@ -152,7 +163,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
         clusters ++= updateClusters(otherNode, newEdges)
       }
     }
-
+    println("Cluster of " + node + ": " + clusters.foreach(println))
     clusters
   }
 
@@ -189,7 +200,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
       isLeft = if (minEdge == leftEdge) true else false
 
       // add minimum edge to returned edges if it does not form a cycle
-      if (unionFind.union(minEdge.left, minEdge.right)) {
+      if (unionFind.union(minEdge.left.id, minEdge.right.id)) {
         edges += minEdge
       }
 
@@ -205,7 +216,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     minEdge = if (isLeft) rightEdge else leftEdge
 
     while (minEdge != null && edges.length < numEdges) {
-      if (unionFind.union(minEdge.left, minEdge.right)) {
+      if (unionFind.union(minEdge.left.id, minEdge.right.id)) {
         edges += minEdge
       }
       minEdge = if (minEdges.hasNext) minEdges.next() else null

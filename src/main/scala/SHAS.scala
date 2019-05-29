@@ -39,8 +39,8 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     fileCreator.writeSequenceFiles(data.rdd, numPoints, numDimensions)
 
     val subGraphIdRDD : RDD[String] = ss.sparkContext.textFile("produced_data/subgraphIds", numGraphs)
-    val start: Long = System.currentTimeMillis()
 
+    val start: Long = System.currentTimeMillis()
     val subMSTs: RDD[(Int, Edge)] = subGraphIdRDD.flatMap(id => localMST(id, "produced_data/dataPartitions"))
 
     var mstToBeMerged: RDD[(Int, Iterable[Edge])] = subMSTs.combineByKey((edge: Edge) => createCombiner(edge),
@@ -92,7 +92,6 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
     val edges: Iterable[Edge] = mstToBeMerged.map(_._2).collect()(0) // we are sure there is only one MST, so collect each edges
 
-    edges.foreach(println)
 
     var edgeArray = edges.toArray
     // separate edges to remove from the rest edges
@@ -107,6 +106,9 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
     // track the edges that have removed until a specific iteration
     val removedTracking: ListBuffer[Edge] = new ListBuffer[Edge]
+
+    var iteration: Int = 0 // used for cluster divisioning and optimizing phase
+
     // iterate over the removed edges
     for (edge <- removedEdges){
 
@@ -119,19 +121,28 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
 
         println("Remove edge: " + left.id + " - " + right.id)
 
+        var removedCluster: ListBuffer[Point] = null
         // more than 2 clusters. we need to find the parent cluster of the divided ones and remove it from the list before inserting the 2 new clusters
-        if (clusters.nonEmpty) {
+        if (iteration > 0) {
+
+          removedCluster = clusters.filter(cluster => cluster contains left).head
+
           // both edge sides will belong to the same cluster, just find for one of them and remove this cluster
           clusters = clusters.filter(cluster => !(cluster contains left))
 
         }
 
         // find left node's subtree
-        clusters += this.updateClusters(left, edgeArray)
-        println("Left ended")
+        val leftCluster = this.updateClusters(left, edgeArray)
+        clusters += leftCluster
+
         // find right node's subtree
-        clusters += this.updateClusters(right, edgeArray)
-        println("Right ended")
+        // could use recurse as above but it is rather slow. Instead take the removed cluster and use the points that are not present on the left cluster
+        // except if we are on the first iteration where there are not clusters to remove
+        val rightCluster = if (iteration > 0) removedCluster.filter(p => !(leftCluster contains p)) else this.updateClusters(right, edgeArray)
+        clusters += rightCluster
+
+        iteration += 1
       }
 
     // convert listbuffer to array
@@ -163,7 +174,7 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
         clusters ++= updateClusters(otherNode, newEdges)
       }
     }
-    println("Cluster of " + node + ": " + clusters.foreach(println))
+
     clusters
   }
 

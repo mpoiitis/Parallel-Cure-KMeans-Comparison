@@ -9,9 +9,6 @@ case class Point(var dimensions: Array[Double] = null, var id: Int = 0) {
   }
 
   def distanceFrom(point: Point, distType: String = "square"): Double ={
-    if (this.id == point.id){
-      return 0
-    }
 
     val dim1 : Array[Double] = this.dimensions
     val dim2 : Array[Double] = point.dimensions
@@ -31,14 +28,6 @@ case class Point(var dimensions: Array[Double] = null, var id: Int = 0) {
     case _ => false
   }
 
-//  {
-//    if (this.id != point.id) return false
-//
-//    val dim1 : Array[Double] = this.dimensions
-//    val dim2 : Array[Double] = point.dimensions
-//    val distWiseEquality : Array[Boolean] = (dim1 zip dim2).map{case (dimA, dimB) => dimA == dimB}.filter( condition => !condition)
-//    !(distWiseEquality.length > 0)
-//  }
   override def hashCode: Int = {
     var sum: Double = 0
     this.dimensions.foreach(sum += _)

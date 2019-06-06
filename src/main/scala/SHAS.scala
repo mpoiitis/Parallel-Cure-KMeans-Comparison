@@ -56,15 +56,10 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
                     numGraphs)
     }
 
-//    mstToBeMerged.collect().foreach(instance => println(instance._1 + ": " + instance._2.foreach(println)))
-
-
     val clusters: Array[(Array[Point], Int)] = extractClusters(mstToBeMerged, numClusters).zipWithIndex
     val end: Long = System.currentTimeMillis()
     log.warn("Total time: " + (end - start) + " ms")
 
-
-    clusters.foreach{case (cluster, id) => println("Cluster id: " + id + " Num of points: " + cluster.length + " Points: (" + cluster.mkString(" ") + ")")}
     clusters
 
   }

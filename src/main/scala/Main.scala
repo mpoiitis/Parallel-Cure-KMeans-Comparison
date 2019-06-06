@@ -5,8 +5,8 @@
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SparkSession}
-
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.functions.min
 
 object Main {
 
@@ -35,14 +35,19 @@ object Main {
 //    println(numOfExamples)
 //    println(data.count())
 
+    // Cluster sample points hierarchically and in a parallel fashion using SHAS
     val data: DataFrame = ss.read.option("inferSchema","true").csv("data/data1.txt").toDF("x", "y").sample(0.1 )
-
     val shas = new SHAS(data, splits = 4, ss = ss)
-    val clusters: Array[(Array[Point], Int)] = shas.run(numClusters = 4)
+    val clusters: Array[(Array[Point], Int)] = shas.run(numClusters = 10)
+    val cure = new Cure(clusters, 5, 0.2, 10, ss)
+    val finalClusters: RDD[Cluster] = cure.run()
 
+    finalClusters.foreach(println)
 //    Thread.sleep(30000000)
     ss.stop()
   }
+
+
 
 
 }

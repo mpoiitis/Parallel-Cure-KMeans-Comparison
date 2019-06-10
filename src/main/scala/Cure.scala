@@ -180,7 +180,7 @@ class Cure(c: Array[(Array[Point], Int)], numClusters: Int, shrinkFactor: Double
   def clusterDistance(cluster1: Cluster, cluster2: Cluster): Double ={
     val crossProduct = cluster1.points.flatMap(p1 => cluster2.points.map(p2 => (p1, p2)))
     val differences = crossProduct.map{case (p1, p2) => p1.distanceFrom(p2)}
-    val minDifference =differences.min
+    val minDifference = differences.min
 
     minDifference
   }

@@ -28,20 +28,22 @@ class SHAS(data: DataFrame, dims: Int = 2, splits: Int = 2, k: Int = 3, ss: Spar
     In this way, any possible edge is assigned to some sub graph
     and taking the union of these would return the original graph
    */
-  def run(numClusters: Int): Array[(Array[Point], Int)] ={
+  def run(numClusters: Int,
+          fileLocation: String = "produced_data/subgraphIds",
+          dataParτitionFilesLocation: String = "produced_data/dataPartitions"): Array[(Array[Point], Int)] ={
 
 //    var numGraphs: Int = numSplits * numSplits / 2
 //    numGraphs = (numGraphs + (K-1)) / K
     var numGraphs: Int = numSplits * (numSplits - 1) / 2 + numSplits
 
     val fileCreator = new FileCreator(ss.sparkContext, numSplits)
-    fileCreator.createPartitionFiles(numGraphs = numGraphs)
-    fileCreator.writeSequenceFiles(data.rdd, numPoints, numDimensions)
+    fileCreator.createPartitionFiles(numGraphs = numGraphs, fileLocation = fileLocation)
+    fileCreator.writeSequenceFiles(data.rdd, numPoints, numDimensions, dataParτitionFilesLocation)
 
-    val subGraphIdRDD : RDD[String] = ss.sparkContext.textFile("produced_data/subgraphIds", numGraphs)
+    val subGraphIdRDD : RDD[String] = ss.sparkContext.textFile(fileLocation, numGraphs)
 
     val start: Long = System.currentTimeMillis()
-    val subMSTs: RDD[(Int, Edge)] = subGraphIdRDD.flatMap(id => localMST(id, "produced_data/dataPartitions"))
+    val subMSTs: RDD[(Int, Edge)] = subGraphIdRDD.flatMap(id => localMST(id, dataParτitionFilesLocation))
 
     var mstToBeMerged: RDD[(Int, Iterable[Edge])] = subMSTs.combineByKey((edge: Edge) => createCombiner(edge),
       (edges: Iterable[Edge], edge: Edge) => mergeValue(edges, edge),

@@ -10,8 +10,7 @@ import org.apache.spark.ml.evaluation.ClusteringEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.rdd.RDD
 import java.io._
-
-import org.apache.spark.sql.functions.min
+import sys.process._
 
 import scala.collection.mutable.ListBuffer
 
@@ -52,98 +51,116 @@ object Main {
     data = data.toDF("x", "y").cache()
 
     val numOfExamples = data.count()
-//    val ratio = 0.01
-//    data = data.sample(ratio)
 
     println("Number of instances in dataset: " + numOfExamples)
 
     var start: Long = 0
     var end: Long = 0
 
-//    // KMEANS
-//
-//    println("Running KMeans...")
-//
-//    start = System.currentTimeMillis()
-//
-//    // creating features column
-//    val assembler = new VectorAssembler()
-//      .setInputCols(Array("x","y"))
-//      .setOutputCol("features")
-//    val transformedData = assembler.transform(data)
-//
-//    // the actual model
-//    val kmeans = new KMeans()
-//      .setK(numIntermediateClusters)
-//      .setSeed(1L)
-//      .setFeaturesCol("features")
-//    val model = kmeans.fit(transformedData)
-//
-//
-//    val predictions = model.transform(transformedData)
-//
-//    // Evaluate clustering by computing Silhouette score
-//    val evaluator = new ClusteringEvaluator().
-//      setPredictionCol("prediction").
-//      setFeaturesCol("features").
-//      setMetricName("silhouette")
-//
-//    end = System.currentTimeMillis()
-//    println("Total time (KMeans): " + (end - start) + " ms")
-//
-//      var file = new File("produced_data/KMeansClusters")
-//      if(file.exists()){
-//        println("Directory exists, deleting...")
-//        this.delete(file)
-//      }
-////    println("Writing KMeans centers to file")
-////    ss.sparkContext.parallelize(model.clusterCenters).repartition(1).saveAsTextFile("produced_data/KMeansClusters")
-//
-//    println("Running SHAS for post processing ...")
-//
-//    start = System.currentTimeMillis()
-//
-//    val dataForHierarchical = ss.sparkContext.parallelize(model.clusterCenters).map(vector => (vector.toArray(0), vector.toArray(1))).toDF("x", "y").cache()
-//    val shasPost = new SHAS(dataForHierarchical, splits = 4, ss = ss)
-//    val serialClusters: Array[(Array[Point], Int)] = shasPost.run(numClusters = numClusters,
-//      fileLocation = "produced_data/subgraphIdsPostProcess",
-//      dataParτitionFilesLocation = "produced_data/dataPartitionsPostProcess")
-//
-//    end = System.currentTimeMillis()
-//    println("Total time (SHAS Post-process): " + (end - start) + " ms")
-//
-//    val clusters = ss.sparkContext.parallelize(serialClusters)
-//      .map{case (points: Array[Point], id: Int) => (this.meanPoint(points).dimensions, id)}
-//      .map{case (arr: Array[Double], id: Int) => (arr, id)}
-//      .toDF("features", "prediction").as[(Array[Double], Int)].collect()
-//
-//    val bClusters = ss.sparkContext.broadcast(clusters)
-//
-//    val newPredictions = data
-//      .map(row => (row.getDouble(0), row.getDouble(1),
-//        Array(row.getDouble(0), row.getDouble(1)), this.closestCluster(row.getDouble(0), row.getDouble(1), bClusters.value)))
-//        .toDF("x", "y", "features", "prediction")
-//
-//    newPredictions.show(5)
-//    val silhouette = evaluator.evaluate(newPredictions)
-//    println("Silhouette with squared euclidean distance = " + silhouette)
+    // KMEANS
+
+    println("Running KMeans...")
+
+    start = System.currentTimeMillis()
+
+    // creating features column
+    val assembler = new VectorAssembler()
+      .setInputCols(Array("x","y"))
+      .setOutputCol("features")
+    val transformedData = assembler.transform(data)
+
+    // the actual model
+    val kmeans = new KMeans()
+      .setK(numIntermediateClusters)
+      .setSeed(1L)
+      .setFeaturesCol("features")
+    val model = kmeans.fit(transformedData)
 
 
-    // 2ND PART
+    val predictions = model.transform(transformedData)
 
+    // Evaluate clustering by computing Silhouette score
+    val evaluator = new ClusteringEvaluator().
+      setPredictionCol("prediction").
+      setFeaturesCol("features").
+      setMetricName("silhouette")
 
-//    // keep a sample of data for SHAS preprocessing
-//    data = data.sample(sampleSize).cache()
+    end = System.currentTimeMillis()
+    println("Total time (KMeans): " + (end - start) + " ms")
 
-//    file = new File("produced_data/sampleFromData")
-//    if(file.exists()){
-//      println("Directory exists, deleting...")
-//      this.delete(file)
-//    }
-//    println("Writing sample to file")
-//    data.rdd.repartition(1).saveAsTextFile("produced_data/sampleFromData")
+    var file: File = null
+
+    // STORE KMEANS CLUSTERS IN FILE FOR PYTHON CLUSTERING AND SILHOUETTE EXTRACTION
+
+    if (from_python) {
+      file = new File("produced_data/KMeansClusters")
+      if (file.exists()) {
+        println("Directory exists, deleting...")
+        this.delete(file)
+      }
+      println("Writing KMeans centers to file")
+      ss.sparkContext.parallelize(model.clusterCenters).repartition(1).saveAsTextFile("produced_data/KMeansClusters")
+    }
+
+    // POST PROCESSING
+
+    // if we are not using python script, run SHAS for post-processing
+    if (!from_python) {
+      println("Running SHAS for post processing ...")
+
+      start = System.currentTimeMillis()
+
+      val dataForHierarchical = ss.sparkContext.parallelize(model.clusterCenters).map(vector => (vector.toArray(0), vector.toArray(1))).toDF("x", "y").cache()
+      val shasPost = new SHAS(dataForHierarchical, splits = 4, ss = ss)
+      val serialClusters: Array[(Array[Point], Int)] = shasPost.run(numClusters = numClusters,
+        fileLocation = "produced_data/subgraphIdsPostProcess",
+        dataParτitionFilesLocation = "produced_data/dataPartitionsPostProcess")
+
+      end = System.currentTimeMillis()
+      println("Total time (SHAS Post-process): " + (end - start) + " ms")
+
+      val clusters = ss.sparkContext.parallelize(serialClusters)
+        .map { case (points: Array[Point], id: Int) => (this.meanPoint(points).dimensions, id) }
+        .map { case (arr: Array[Double], id: Int) => (arr, id) }
+        .toDF("features", "prediction").as[(Array[Double], Int)].collect()
+
+      val bClusters = ss.sparkContext.broadcast(clusters)
+
+      val newPredictions = data
+        .map(row => (row.getDouble(0), row.getDouble(1),
+          Array(row.getDouble(0), row.getDouble(1)), this.closestCluster(row.getDouble(0), row.getDouble(1), bClusters.value)))
+        .toDF("x", "y", "features", "prediction")
+
+      newPredictions.show(5)
+      val silhouette = evaluator.evaluate(newPredictions)
+      println("Silhouette with squared euclidean distance = " + silhouette)
+    }
+    else {
+      println("Running Hierarchical Clustering for post processing using python script")
+      val result = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py postProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
+      println("Result: " + result)
+    }
+
+    // ========================================================== 2ND PART ==========================================================
+
+    // SAMPLE DATA FOR SHAS PRE PROCESSING
+
+    val dataSample = data.sample(sampleSize).cache()
+
+    // SAVE FILE NEEDED FROM PYTHON SCRIPT TO CREATE INTERMEDIATE CLUSTERS
+
+    if (from_python) {
+      file = new File("produced_data/sampleFromData")
+      if (file.exists()) {
+        println("Directory exists, deleting...")
+        this.delete(file)
+      }
+      println("Writing sample to file")
+      dataSample.rdd.repartition(1).saveAsTextFile("produced_data/sampleFromData")
+    }
 
     // CURE
+
     var clusters2: Array[(Array[Point], Int)] = null
     if (!from_python) {
       println("Running SHAS for pre processing ...")
@@ -151,15 +168,19 @@ object Main {
       start = System.currentTimeMillis()
 
       // Cluster sample points hierarchically and in a parallel fashion using SHAS
-      val shasPre = new SHAS(data, splits = 4, ss = ss)
+      val shasPre = new SHAS(dataSample, splits = 4, ss = ss)
       clusters2 = shasPre.run(numClusters = numIntermediateClusters)
 
       end = System.currentTimeMillis()
       println("Total time (SHAS Pre-process): " + (end - start) + " ms")
     }
     else {
+      println("Running Hierarchical Clustering for pre processing using python script")
+      val result1 = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py preProcess $numIntermediateClusters" ! ProcessLogger(stdout append _, stderr append _)
+      println("Result: " + result1)
+
       import scala.io.Source
-      val filename = "C:\\Users\\Marinos\\PycharmProjects\\HierarchicalClustering\\pythonData\\intermediateClusters.txt"
+      val filename = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\pythonData\\intermediateClusters.txt"
       var counter = 0
       var map: Map[Int, ListBuffer[Point]] = Map()
       for (line <- Source.fromFile(filename).getLines) {

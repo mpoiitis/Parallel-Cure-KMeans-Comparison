@@ -126,13 +126,12 @@ object Main {
 
       val bClusters = ss.sparkContext.broadcast(clusters)
 
-      val newPredictions = data
+      val predictions = data
         .map(row => (row.getDouble(0), row.getDouble(1),
           Array(row.getDouble(0), row.getDouble(1)), this.closestCluster(row.getDouble(0), row.getDouble(1), bClusters.value)))
         .toDF("x", "y", "features", "prediction")
 
-      newPredictions.show(5)
-      val silhouette = evaluator.evaluate(newPredictions)
+      val silhouette = evaluator.evaluate(predictions)
       println("Silhouette with squared euclidean distance = " + silhouette)
     }
     else {
@@ -217,10 +216,25 @@ object Main {
     val cure = new Cure(clusters2, numClusters, shrinkFactor, numRepresentatives, ss)
     val finalClusters: RDD[Cluster] = cure.run()
 
-    finalClusters.foreach(println)
-
     end = System.currentTimeMillis()
     println("Total time (CURE): " + (end - start) + " ms")
+
+    // CURE SILHOUETTE
+
+    val clustersForEvaluation = finalClusters
+      .map { cluster: Cluster => (this.meanPoint(cluster.points).dimensions, cluster.id) }
+//      .map { case (arr: Array[Double], id: Int) => (arr, id) }
+      .toDF("features", "prediction").as[(Array[Double], Int)].collect()
+
+    val bFinalClusters = ss.sparkContext.broadcast(clustersForEvaluation)
+
+    val newPredictions = data
+      .map(row => (row.getDouble(0), row.getDouble(1),
+        Array(row.getDouble(0), row.getDouble(1)), this.closestCluster(row.getDouble(0), row.getDouble(1), bFinalClusters.value)))
+      .toDF("x", "y", "features", "prediction")
+
+    val silhouette = evaluator.evaluate(newPredictions)
+    println("Silhouette with squared euclidean distance for CURE = " + silhouette)
 
     ss.stop()
   }

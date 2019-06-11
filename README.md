@@ -38,11 +38,55 @@ Number of clusters: 5
     Num of clusters = 5
 =====================================================  
   
-Sample size: 0.01% - 28167 points  
+Sample size: 0.01% - 5585 points  
     
 3a) SHAS for Pre-Processing: 4569 ms
     Num of clusters = 100
 3b) Agglomerative Hierarchical for Pre-Processing: 209.47 ms
     Num of clusters = 100
     
-4) CURE: TBD
+4) CURE: TBD  
+
+### 3rd experiment  
+
+Number of intermediate clusters: 10
+Number of clusters: 5
+
+1) KMeans: 41747 ms (in whole dataset)
+  
+2) Agglomerative Hierarchical for Post-Processing: 7.978916168212891 ms  
+    Silhouette Coefficient = 0.329  
+    Num of clusters = 5  
+
+=====================================================  
+  
+Sample size: 0.01% - 5585 points  
+    
+3) Agglomerative Hierarchical for Pre-Processing: 2186.1536502838135 ms
+    Silhouette Coefficient = 0.314 (intermediate step)  
+    Num of clusters = 10
+    
+4) CURE: 7965 ms  
+    Silhouette Coefficient = 0.6259368183047109  
+    
+### 4th experiment  
+
+Number of intermediate clusters: 10
+Number of clusters: 5
+
+1) KMeans: 46053 ms (in whole dataset)
+  
+2) SHAS for Post-Processing: 2372 ms  
+    Silhouette Coefficient = 0.3627961989983045  
+    Num of clusters = 5  
+
+=====================================================  
+  
+Sample size: 0.01% - 5585 points  
+    
+3b) SHAS for Pre-Processing: 67765 ms
+    Silhouette Coefficient ~ 0.345 (intermediate step)  
+    Num of clusters = 10
+    
+4) CURE: 7233 ms  
+    Silhouette Coefficient = 0.3239711165337978  

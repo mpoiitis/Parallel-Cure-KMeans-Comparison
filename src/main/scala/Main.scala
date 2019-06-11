@@ -178,6 +178,10 @@ object Main {
       val result1 = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py preProcess $numIntermediateClusters" ! ProcessLogger(stdout append _, stderr append _)
       println("Result: " + result1)
 
+      // if error occurred do not continue
+      if (result1 != 0) {
+        return
+      }
       import scala.io.Source
       val filename = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\pythonData\\intermediateClusters.txt"
       var counter = 0

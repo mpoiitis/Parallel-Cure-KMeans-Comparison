@@ -9,7 +9,7 @@ class Cure(c: Array[(Array[Point], Int)], numClusters: Int, shrinkFactor: Double
 
   def run(): RDD[Cluster] ={
 
-    var clusters = this.calculateRepresentatives().cache()
+    var clusters = this.calculateRepresentatives()
     while (clusters.count() > this.numClusters) {
       // find distances between any pair of clusters and remove distances = 0, as they refer to the same cluster
       val combinations: Dataset[(Cluster, Cluster, Double)] = clusters.cartesian(clusters)

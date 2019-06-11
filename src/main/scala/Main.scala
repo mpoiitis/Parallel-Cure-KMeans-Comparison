@@ -203,7 +203,11 @@ object Main {
         }
       }
 
-      //TODO convert map of clusterId, List[Points] -> Array[(Array[Point], Int)]
+      // convert map of key: clusterId, value: List[Points] -> Array[(Array[Point], Int)]
+      val tempList: ListBuffer[(Array[Point], Int)] = ListBuffer()
+      map.keys.foreach(clusterId => tempList += Tuple2(map(clusterId).toArray, clusterId))
+
+      clusters2 = tempList.toArray
     }
 
     println("Running CURE...")

@@ -7,6 +7,9 @@ class Cure(c: Array[(Array[Point], Int)], numClusters: Int, shrinkFactor: Double
   val clusterRdd: RDD[(Array[Point], Int)] = ss.sparkContext.parallelize(c)
   import ss.implicits._
 
+  /*
+    Main cure function that uses merging
+   */
   def run(): RDD[Cluster] ={
 
     var clusters = this.calculateRepresentatives()
@@ -39,6 +42,16 @@ class Cure(c: Array[(Array[Point], Int)], numClusters: Int, shrinkFactor: Double
 
     clusters
   }
+
+  /*
+    Main cure function that doesn't use merging
+   */
+  def runWithoutMerge(): RDD[Cluster]={
+
+    val clusters = this.calculateRepresentatives()
+    clusters
+  }
+
   /*
    Calculate the representatives for all the clusters
    */

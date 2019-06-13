@@ -16,25 +16,42 @@ import scala.collection.mutable.ListBuffer
 
 object Main {
 
+  println("Valid CLI arguments are: \n" +
+    "number_of_clusters, sample_size (percentage), num_intermediate_clusters, num_representatives, shrink_factor," +
+    " from_python (boolean), withRepresentatives (boolean), merge (boolean)")
+
+  // CLI ARGUMENTS
+  var numIntermediateClusters = 10
+  var numClusters = 5
+  var sampleSize = 0.001
+  var numRepresentatives = 10
+  var shrinkFactor = 0.2
+  var from_python = true
+  var withRepresentatives = false
+  var merge = true
+  val ss: SparkSession = SparkSession.builder().master("local[*]").appName("BigDataApp").getOrCreate()
+  Logger.getRootLogger.setLevel(Level.WARN)
+  import ss.implicits._
+
   def main(args: Array[String]): Unit = {
-
-    if (args.length != 6) {
-      println("Parameters needed! Parameters are: \n" +
-        "number_of_clusters, sample_size (percentage), num_intermediate_clusters, num_representatives, shrink_factor, from_python")
-    }
-
-    val ss = SparkSession.builder().master("local[*]").appName("BigDataApp").getOrCreate()
-    Logger.getRootLogger.setLevel(Level.WARN)
-    import ss.implicits._
-
     // CLI ARGUMENTS
-    val numIntermediateClusters = args(2).toInt
-    val numClusters = args(0).toInt
-    val sampleSize = args(1).toDouble
-    val numRepresentatives = args(3).toInt
-    val shrinkFactor = args(4).toDouble
-    val from_python = args(5).toBoolean
+    numClusters = if (args.length >= 1) args(0).toInt else 5
+    sampleSize = if (args.length >= 2) args(1).toDouble else 0.001
+    numIntermediateClusters = if (args.length >= 3) args(2).toInt else 10
+    numRepresentatives = if (args.length >= 4) args(3).toInt else 10
+    shrinkFactor = if (args.length >= 5) args(4).toDouble else 0.2
+    from_python = if (args.length >= 6) args(5).toBoolean else true
+    withRepresentatives = if (args.length >= 7) args(6).toBoolean else false
+    merge = if (args.length >= 8) args(7).toBoolean else true
 
+    println("numIntermediateClusters: " + numIntermediateClusters)
+    println("numClusters: " + numClusters)
+    println("numRepresentatives: " + numRepresentatives)
+    println("sampleSize: " + sampleSize)
+    println("shrinkFactor: " + shrinkFactor)
+    println("from_python: " + from_python)
+    println("withRepresentatives: " + withRepresentatives)
+    println("merge: " + merge)
     // READ DATA
 
     val files = new java.io.File("data/").listFiles.filter(_.getName.endsWith(".txt"))
@@ -159,7 +176,19 @@ object Main {
     }
 
     // CURE
+    if (merge){
+      this.cureWithMerge(data, dataSample)
+    }
+    else {
+      this.cureWithoutMerge(data, dataSample)
+    }
 
+    ss.stop()
+  }
+
+  def cureWithMerge(data: DataFrame, dataSample: DataFrame): Unit ={
+    var start: Long = 0
+    var end: Long = 0
     var clusters2: Array[(Array[Point], Int)] = null
     if (!from_python) {
       println("Running SHAS for pre processing ...")
@@ -223,31 +252,182 @@ object Main {
     end = System.currentTimeMillis()
     println("Total time (CURE): " + (end - start) + " ms")
 
+    finalClusters.foreach(println)
+
     // CURE SILHOUETTE
+    val evaluator = new ClusteringEvaluator().
+      setPredictionCol("prediction").
+      setFeaturesCol("features").
+      setMetricName("silhouette")
 
-    val clustersForEvaluation = finalClusters
-      .map { cluster: Cluster => (this.meanPoint(cluster.points).dimensions, cluster.id) }
-//      .map { case (arr: Array[Double], id: Int) => (arr, id) }
-      .toDF("features", "prediction").as[(Array[Double], Int)].collect()
+    // calculate Silhouette score using representatives
+    if (withRepresentatives){
+      println("Calculate Silhouette score using representatives")
 
-    val bFinalClusters = ss.sparkContext.broadcast(clustersForEvaluation)
+      val clustersToPoints: Array[(Point, Int)] = finalClusters
+        .map(cluster => cluster.points.map{point: Point => (point, cluster.id)})
+        .flatMap(l => l).collect()
 
-    val newPredictions = data
-      .map(row => (row.getDouble(0), row.getDouble(1),
-        Array(row.getDouble(0), row.getDouble(1)), this.closestCluster(row.getDouble(0), row.getDouble(1), bFinalClusters.value)))
-      .toDF("x", "y", "features", "prediction")
+      val bFinalClusters = ss.sparkContext.broadcast(clustersToPoints)
 
-    val silhouette = evaluator.evaluate(newPredictions)
-    println("Silhouette with squared euclidean distance for CURE = " + silhouette)
+      val newPredictions = data
+        .map(row => (row.getDouble(0), row.getDouble(1),
+          Array(row.getDouble(0), row.getDouble(1)),
+          this.closestCluster(row.getDouble(0),
+            row.getDouble(1),
+            bFinalClusters.value.map{case (point, id) => (point.dimensions, id)})))
+        .toDF("x", "y", "features", "prediction")
 
-    ss.stop()
+      val silhouette = evaluator.evaluate(newPredictions)
+      println("Silhouette with squared euclidean distance for CURE = " + silhouette)
+    } // calculate Silhouette score using cluster centers
+    else {
+      println("Calculate Silhouette score using cluster centers")
+
+      val clustersForEvaluation = finalClusters
+        .map { cluster: Cluster => (this.meanPoint(cluster.points).dimensions, cluster.id) }
+        .toDF("features", "prediction").as[(Array[Double], Int)].collect()
+
+      val bFinalClusters = ss.sparkContext.broadcast(clustersForEvaluation)
+
+      val newPredictions = data
+        .map(row => (row.getDouble(0), row.getDouble(1),
+          Array(row.getDouble(0), row.getDouble(1)),
+          this.closestCluster(row.getDouble(0),
+            row.getDouble(1),
+            bFinalClusters.value)))
+        .toDF("x", "y", "features", "prediction")
+
+      val silhouette = evaluator.evaluate(newPredictions)
+      println("Silhouette with squared euclidean distance for CURE = " + silhouette)
+    }
   }
 
-  def closestCluster(dim1: Double, dim2: Double, clusterCenters: Array[(Array[Double], Int)]): Int = {
+  def cureWithoutMerge(data: DataFrame, dataSample: DataFrame): Unit ={
+    var start: Long = 0
+    var end: Long = 0
+    var clusters2: Array[(Array[Point], Int)] = null
+    if (!from_python) {
+      println("Running SHAS for pre processing ...")
+
+      start = System.currentTimeMillis()
+
+      // Cluster sample points hierarchically and in a parallel fashion using SHAS
+      val shasPre = new SHAS(dataSample, splits = 4, ss = ss)
+      clusters2 = shasPre.run(numClusters = numClusters)
+
+      end = System.currentTimeMillis()
+      println("Total time (SHAS Pre-process): " + (end - start) + " ms")
+    }
+    else {
+      println("Running Hierarchical Clustering for pre processing using python script")
+      val result1 = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py preProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
+      println("Result: " + result1)
+
+      // if error occurred do not continue
+      if (result1 != 0) {
+        return
+      }
+      import scala.io.Source
+      val filename = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\pythonData\\intermediateClusters.txt"
+      var counter = 0
+      var map: Map[Int, ListBuffer[Point]] = Map()
+      for (line <- Source.fromFile(filename).getLines) {
+        val arr = line.split(" ")
+        val x = arr(0).toDouble
+        val y = arr(1).toDouble
+        val point: Point = Point(Array(x, y), counter)
+        counter += 1
+
+        val clusterId = arr(2).toInt
+
+        if (!map.contains(clusterId)){
+          map += (clusterId -> ListBuffer(point))
+        }
+        else {
+          map = map.get(clusterId) match {
+            case Some(xs:ListBuffer[Point]) => map.updated(clusterId, point +: xs)
+            case None => map
+          }
+        }
+      }
+
+      // convert map of key: clusterId, value: List[Points] -> Array[(Array[Point], Int)]
+      val tempList: ListBuffer[(Array[Point], Int)] = ListBuffer()
+      map.keys.foreach(clusterId => tempList += Tuple2(map(clusterId).toArray, clusterId))
+
+      clusters2 = tempList.toArray
+    }
+
+    println("Running CURE...")
+
+    start = System.currentTimeMillis()
+
+    val cure = new Cure(clusters2, numClusters, shrinkFactor, numRepresentatives, ss)
+    val finalClusters: RDD[Cluster] = cure.runWithoutMerge()
+
+    end = System.currentTimeMillis()
+    println("Total time (CURE): " + (end - start) + " ms")
+
+    finalClusters.foreach(println)
+
+    // CURE SILHOUETTE
+    val evaluator = new ClusteringEvaluator().
+      setPredictionCol("prediction").
+      setFeaturesCol("features").
+      setMetricName("silhouette")
+
+    // calculate Silhouette score using representatives
+    if (withRepresentatives){
+      println("Calculate Silhouette score using representatives")
+
+      val clustersToPoints: Array[(Point, Int)] = finalClusters
+        .map(cluster => cluster.points.map{point: Point => (point, cluster.id)})
+        .flatMap(l => l).collect()
+
+      val bFinalClusters = ss.sparkContext.broadcast(clustersToPoints)
+
+      val newPredictions = data
+        .map(row => (row.getDouble(0), row.getDouble(1),
+          Array(row.getDouble(0), row.getDouble(1)),
+          this.closestCluster(row.getDouble(0),
+            row.getDouble(1),
+            bFinalClusters.value.map{case (point, id) => (point.dimensions, id)})))
+        .toDF("x", "y", "features", "prediction")
+
+      val silhouette = evaluator.evaluate(newPredictions)
+      println("Silhouette with squared euclidean distance for CURE = " + silhouette)
+    } // calculate Silhouette score using cluster centers
+    else {
+      println("Calculate Silhouette score using cluster centers")
+
+      val clustersForEvaluation = finalClusters
+        .map { cluster: Cluster => (this.meanPoint(cluster.points).dimensions, cluster.id) }
+        .toDF("features", "prediction").as[(Array[Double], Int)].collect()
+
+      val bFinalClusters = ss.sparkContext.broadcast(clustersForEvaluation)
+
+      val newPredictions = data
+        .map(row => (row.getDouble(0), row.getDouble(1),
+          Array(row.getDouble(0), row.getDouble(1)),
+          this.closestCluster(row.getDouble(0),
+            row.getDouble(1),
+            bFinalClusters.value)))
+        .toDF("x", "y", "features", "prediction")
+
+      val silhouette = evaluator.evaluate(newPredictions)
+      println("Silhouette with squared euclidean distance for CURE = " + silhouette)
+    }
+  }
+
+  /*
+    Finds the cluster closer to the given point
+   */
+  def closestCluster(dim1: Double, dim2: Double, clusterPoints: Array[(Array[Double], Int)]): Int = {
     var minDistance: Double = Double.MaxValue
     var clusterId: Int = -1
 
-    for (tuple <- clusterCenters){
+    for (tuple <- clusterPoints){
       val center = tuple._1
       val distance = this.distanceFrom(center, Array(dim1, dim2))
       if (distance < minDistance){
@@ -259,6 +439,9 @@ object Main {
     clusterId
   }
 
+  /*
+   Calculates the distance between 2 points
+   */
   def distanceFrom(dim1 : Array[Double], dim2 : Array[Double], distType: String = "square"): Double ={
 
     val distances : Array[Double] = (dim1 zip dim2).map{case (dimA, dimB) => Math.pow(dimA - dimB, 2)}
@@ -267,6 +450,7 @@ object Main {
     if (distType == "euclidean") Math.sqrt(distance)
     else distance
   }
+
   /*
  calculate mean of 2d points
   */

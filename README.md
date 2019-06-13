@@ -1,3 +1,14 @@
+## ARGUMENTS  
+1) Number of clusters we want CURE to compute
+2) Sample size on which the hierarchical pre processing will run
+3) Number of intermediate clusters needed for hierarchical preprocess
+4) Number of representatives for each cluster CURE finds
+5) Shrink factor to shrink representatives of each cluster
+6) From_python to decide whether to run python hierarchical clustering or SHAS custom implementation
+7) WithRepresentatives to decide whether to use representatives or cluster centers for silhouette score
+8) Merge to decide whether CURE should merge clusters iteratively or not. If Merge is false,
+ then the hierarchical preprocessing calculates immediately the final number of clusters  
+## EXPERIMENTS  
 ### 1st experiment  
 Number of intermediate clusters: 10
 Number of clusters: 5

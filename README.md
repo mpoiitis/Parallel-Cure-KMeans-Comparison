@@ -141,3 +141,54 @@ Sample size: 0.01% - 5550 points
     Num of clusters = 100  
     
 4) CURE: TBD
+
+### 7th experiment  
+
+Number of intermediate clusters: 120 (not significant, CURE does not merge clusters here)  
+Number of clusters: 100
+
+1) KMeans: 128700 ms (in whole dataset)
+  
+2) Agglomerative Hierarchical for Post-Processing: 179.97312545776367 ms  
+    Silhouette Coefficient = 0.047  
+    Num of clusters = 100  
+
+=====================================================  
+  
+Sample size: 0.01% - 5550 points  
+    
+3) Agglomerative Hierarchical for Pre-Processing: 153658 ms
+    Silhouette Coefficient = 0.315  
+    Num of clusters = 100  
+    
+4) CURE: 16 ms  
+    Silhouette Coefficient = 0.47428127222595284  
+    Num of clusters = 100  
+    
+### 8th experiment  
+
+Number of intermediate clusters: 10 (not significant, CURE does not merge clusters here)  
+Number of clusters: 5
+
+1) KMeans: 46693 ms (in whole dataset)
+  
+2) Agglomerative Hierarchical for Post-Processing: 9.00125503540039 ms  
+    Silhouette Coefficient = 0.329  
+    Num of clusters = 5  
+
+=====================================================  
+  
+Sample size: 0.01% - 5550 points  
+    
+3) Agglomerative Hierarchical for Pre-Processing: 2405.583143234253 ms
+    Silhouette Coefficient = 0.446  
+    Num of clusters = 5  
+    
+4) CURE: 16 ms  
+    Silhouette Coefficient = 0.6339259145417321 
+    Num of clusters = 5  
+    
+## OBSERVATION
+
+Silhouette score is roughly the same whether it is calculated via the representatives 
+or the cluster centers  

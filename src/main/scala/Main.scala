@@ -29,6 +29,8 @@ object Main {
   var from_python = true
   var withRepresentatives = false
   var merge = true
+  var filepath = "data/"
+  var pyFilePath = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py"
   val ss: SparkSession = SparkSession.builder().master("local[*]").appName("BigDataApp").getOrCreate()
   Logger.getRootLogger.setLevel(Level.WARN)
   import ss.implicits._
@@ -43,6 +45,8 @@ object Main {
     from_python = if (args.length >= 6) args(5).toBoolean else true
     withRepresentatives = if (args.length >= 7) args(6).toBoolean else false
     merge = if (args.length >= 8) args(7).toBoolean else true
+    filepath = if (args.length >= 9) args(8) else "data/"
+    pyFilePath = if (args.length >= 10) args(9) else "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py"
 
     println("numIntermediateClusters: " + numIntermediateClusters)
     println("numClusters: " + numClusters)
@@ -52,9 +56,10 @@ object Main {
     println("from_python: " + from_python)
     println("withRepresentatives: " + withRepresentatives)
     println("merge: " + merge)
+    println("filepath " + filepath)
     // READ DATA
-
-    val files = new java.io.File("data/").listFiles.filter(_.getName.endsWith(".txt"))
+   
+    val files = new java.io.File(filepath).listFiles.filter(_.getName.endsWith(".txt"))
 
     var data: DataFrame = null
     for (file <- files) {
@@ -153,7 +158,7 @@ object Main {
     }
     else {
       println("Running Hierarchical Clustering for post processing using python script")
-      val result = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py postProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
+      val result = s"python $pyFilePath postProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
       println("Result: " + result)
     }
 

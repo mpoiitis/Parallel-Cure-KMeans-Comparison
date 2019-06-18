@@ -11,9 +11,12 @@
 #
 # Top-level generic files
 #
-/.idea/
-/project/
-/target/
+.idea/
+project/
+target/
+produced_data/
+data/
+out/
 
 #
 # git files that we don't want to ignore

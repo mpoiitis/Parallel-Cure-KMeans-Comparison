@@ -20,6 +20,8 @@ object Main {
     "number_of_clusters, sample_size (percentage), num_intermediate_clusters, num_representatives, shrink_factor," +
     " from_python (boolean), withRepresentatives (boolean), merge (boolean)")
 
+  val currentPath: String = System.getProperty("user.dir")
+
   // CLI ARGUMENTS
   var numIntermediateClusters = 10
   var numClusters = 5
@@ -29,25 +31,27 @@ object Main {
   var from_python = true
   var withRepresentatives = false
   var merge = true
-  var filepath = "data/"
-  var pyFilePath = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py"
+  var filePath = s"$currentPath\\data\\"
+  var pyFilePath = s"$currentPath\\src\\main\\python\\main.py"
   val ss: SparkSession = SparkSession.builder().master("local[*]").appName("BigDataApp").getOrCreate()
   Logger.getRootLogger.setLevel(Level.WARN)
   import ss.implicits._
 
   def main(args: Array[String]): Unit = {
     // CLI ARGUMENTS
-    numClusters = if (args.length >= 1) args(0).toInt else 5
-    sampleSize = if (args.length >= 2) args(1).toDouble else 0.001
-    numIntermediateClusters = if (args.length >= 3) args(2).toInt else 10
-    numRepresentatives = if (args.length >= 4) args(3).toInt else 10
-    shrinkFactor = if (args.length >= 5) args(4).toDouble else 0.2
-    from_python = if (args.length >= 6) args(5).toBoolean else true
-    withRepresentatives = if (args.length >= 7) args(6).toBoolean else false
-    merge = if (args.length >= 8) args(7).toBoolean else true
-    filepath = if (args.length >= 9) args(8) else "data/"
-    pyFilePath = if (args.length >= 10) args(9) else "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py"
+    filePath = if (args.length >= 1) args(0).toString else s"$currentPath\\data\\"
+    pyFilePath = if (args.length >= 2) args(1).toString else s"$currentPath\\src\\main\\python\\main.py"
+    numClusters = if (args.length >= 3) args(2).toInt else 5
+    sampleSize = if (args.length >= 4) args(3).toDouble else 0.001
+    numIntermediateClusters = if (args.length >= 5) args(4).toInt else 10
+    numRepresentatives = if (args.length >= 6) args(5).toInt else 10
+    shrinkFactor = if (args.length >= 7) args(6).toDouble else 0.2
+    from_python = if (args.length >= 8) args(7).toBoolean else true
+    withRepresentatives = if (args.length >= 9) args(8).toBoolean else false
+    merge = if (args.length >= 10) args(9).toBoolean else true
 
+    println("dataPath: " + filePath)
+    println("pythonPath: " + pyFilePath)
     println("numIntermediateClusters: " + numIntermediateClusters)
     println("numClusters: " + numClusters)
     println("numRepresentatives: " + numRepresentatives)
@@ -56,10 +60,10 @@ object Main {
     println("from_python: " + from_python)
     println("withRepresentatives: " + withRepresentatives)
     println("merge: " + merge)
-    println("filepath " + filepath)
+
     // READ DATA
-   
-    val files = new java.io.File(filepath).listFiles.filter(_.getName.endsWith(".txt"))
+
+    val files = new java.io.File(filePath).listFiles.filter(_.getName.endsWith(".txt"))
 
     var data: DataFrame = null
     for (file <- files) {
@@ -158,6 +162,7 @@ object Main {
     }
     else {
       println("Running Hierarchical Clustering for post processing using python script")
+//      val currentPath = System.getProperty("user.dir")
       val result = s"python $pyFilePath postProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
       println("Result: " + result)
     }
@@ -209,7 +214,8 @@ object Main {
     }
     else {
       println("Running Hierarchical Clustering for pre processing using python script")
-      val result1 = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py preProcess $numIntermediateClusters" ! ProcessLogger(stdout append _, stderr append _)
+      val currentPath = System.getProperty("user.dir")
+      val result1 = s"python $pyFilePath preProcess $numIntermediateClusters" ! ProcessLogger(stdout append _, stderr append _)
       println("Result: " + result1)
 
       // if error occurred do not continue
@@ -217,7 +223,7 @@ object Main {
         return
       }
       import scala.io.Source
-      val filename = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\pythonData\\intermediateClusters.txt"
+      val filename = s"$currentPath\\src\\main\\python\\pythonData\\intermediateClusters.txt"
       var counter = 0
       var map: Map[Int, ListBuffer[Point]] = Map()
       for (line <- Source.fromFile(filename).getLines) {
@@ -326,7 +332,8 @@ object Main {
     }
     else {
       println("Running Hierarchical Clustering for pre processing using python script")
-      val result1 = s"python C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\main.py preProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
+//      val currentPath = System.getProperty("user.dir")
+      val result1 = s"python $pyFilePath preProcess $numClusters" ! ProcessLogger(stdout append _, stderr append _)
       println("Result: " + result1)
 
       // if error occurred do not continue
@@ -334,7 +341,7 @@ object Main {
         return
       }
       import scala.io.Source
-      val filename = "C:\\Users\\Marinos\\IdeaProjects\\CURE-algorithm\\src\\main\\python\\pythonData\\intermediateClusters.txt"
+      val filename = s"$currentPath\\src\\main\\python\\pythonData\\intermediateClusters.txt"
       var counter = 0
       var map: Map[Int, ListBuffer[Point]] = Map()
       for (line <- Source.fromFile(filename).getLines) {

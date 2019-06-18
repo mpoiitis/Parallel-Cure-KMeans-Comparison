@@ -191,4 +191,4 @@ Sample size: 0.01% - 5550 points
 ## OBSERVATION
 
 Silhouette score is roughly the same whether it is calculated via the representatives 
-or the cluster centers  
+or the cluster centers

@@ -14,14 +14,17 @@
 .idea/
 project/
 target/
-produced_data/
 data/
 out/
+target/
+produced_data/
 
 #
 # git files that we don't want to ignore
 #
 !.gitignore
 
+intermediateClusters.txt
 *.class
 *.log
+*.docx

@@ -1,14 +1,25 @@
+## IMPLEMENTATION  
+This repository is a Scala/Spark/Python implementation of a comparison between a classic KMEANS and a CURE algorithm.  
+Specifically, the two processes under comparison is:  
+1) Spark KMEANS for pre processing with serial agglomerative hierarchical clustering (python) or parallel SHAS hierarchical for post processing  
+2) Serial agglomerative hierarchical clustering (python) or parallel SHAS hierarchical for pre processing with Spark CURE for post processing  
+Evaluation using Silhouette coefficient
+
 ## ARGUMENTS  
 1) Number of clusters we want CURE to compute
 2) Sample size on which the hierarchical pre processing will run
 3) Number of intermediate clusters needed for hierarchical preprocess
 4) Number of representatives for each cluster CURE finds
-5) Shrink factor to shrink representatives of each cluster
-6) From_python to decide whether to run python hierarchical clustering or SHAS custom implementation
-7) WithRepresentatives to decide whether to use representatives or cluster centers for silhouette score
-8) Merge to decide whether CURE should merge clusters iteratively or not. If Merge is false,
+5) "Shrink factor" to shrink representatives of each cluster
+6) "From_python" to decide whether to run python hierarchical clustering or SHAS custom implementation
+7) "WithRepresentatives" to decide whether to use representatives or cluster centers for silhouette score
+8) "Merge" to decide whether CURE should merge clusters iteratively or not. If Merge is false,
  then the hierarchical preprocessing calculates immediately the final number of clusters  
-## EXPERIMENTS  
+ 
+## ADDITIONAL INFO  
+1) Data should be located in a "data" folder under the root directory  
+2) Python hierarchical agglomerative clustering is a separate process. You can add the produced clusters in a "produced_data" folder under the root directory, or run the SHAS implementation which uses the clusters produced by the previous pipeline step ( in case of post processing) or the sample (in case of pre processing).  
+## SAMPLE EXPERIMENTS  
 ### 1st experiment  
 Number of intermediate clusters: 10
 Number of clusters: 5
